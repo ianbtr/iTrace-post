@@ -10,9 +10,15 @@ with open("MineGenerator.java", "r") as infile:
 # Replace tabs with 4 spaces
 code = code.replace("\t", " "*4)
 
-aois = aoi.code_to_aois(code, filename="MineGenerator.java")
+# Note: pixel-size of 10pt Consolas on my monitor is 18 x 32 px.
+# The line offset in my IDE with my monitor is 6px.
+aois = aoi.code_to_aois(code, filename="MineGenerator.java",
+    font_size=(18, 32), line_offset=6)
+
 lines = code.split("\n")
-img = plot.draw_code(lines, font_size=18, line_offset=5)
+
+# Default font in eclipse is Consolas, size 10.
+img = plot.draw_code(lines, font_size=32, line_offset=6)
 
 token_img = plot.draw_rectangles(aois[aois.kind == "token"], img)
 token_img.save("tokens.png")
