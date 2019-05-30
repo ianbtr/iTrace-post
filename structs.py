@@ -11,3 +11,5 @@ class Rect:
             "T": int(self.top),
             "B": int(self.bottom)
         }
+    def area(self):
+        return (self.right - self.left) * (self.bottom - self.top)
