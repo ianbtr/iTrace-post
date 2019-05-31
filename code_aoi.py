@@ -89,6 +89,8 @@ def generate_code_aois(x_res, y_res, *args):
     # Create logical array
     regions = np.zeros((y_res, x_res))
     for rect in rects:
+        if rect.top < 0: rect.top = 0
+        if rect.left < 0: rect.left = 0
         regions[rect.top : rect.bottom + 1, rect.left : rect.right + 1] = 1
 
     return regions
