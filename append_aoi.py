@@ -14,7 +14,10 @@ import os
 import json
 
 def is_inside(rectangle, x, y):
-    pass
+    return x >= rectangle["L"] and \
+        x <= rectangle["R"] and \
+        y >= rectangle["T"] and \
+        y <= rectangle["B"]
 
 if len(sys.argv) < 6:
     print("USAGE: <python> append_aoi.py <data file path> <x field name> <y field name> <aoi json path> <output file path>")
@@ -51,12 +54,17 @@ with open(dfpath) as infile:
             # deduce aoi
             fix_x = row[x_fieldname]
             fix_y = row[y_fieldname]
-            fix_aoi = list()
+            fix_aoi = None
 
             for i in range(len(aois)):
                 if is_inside(aois[i], fix_x, fix_y):
-                    fix_aoi.append(str(i))
+                    fix_aoi = i
+                    break
 
             out_row = dict(row)
-            out_row["AOI"] = "/".join(fix_aoi)
+
+            if fix_aoi is None:
+                fix_aoi = -1
+
+            out_row["AOI"] = str(fix_aoi)
             ocsv.writerow(out_row)
