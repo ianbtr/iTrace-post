@@ -14,10 +14,10 @@ import os
 import json
 
 def is_inside(rectangle, x, y):
-    return x >= rectangle["L"] and \
-        x <= rectangle["R"] and \
-        y >= rectangle["T"] and \
-        y <= rectangle["B"]
+    return x >= int(rectangle["L"]) and \
+        x <= int(rectangle["R"]) and \
+        y >= int(rectangle["T"]) and \
+        y <= int(rectangle["B"])
 
 if len(sys.argv) < 6:
     print("USAGE: <python> append_aoi.py <data file path> <x field name> <y field name> <aoi json path> <output file path>")
@@ -40,15 +40,16 @@ x_fieldname, y_fieldname = sys.argv[2:4]
 with open(json_fpath) as infile:
     aois = json.load(infile)
 
-with open(dfpath) as infile:
+with open(dfpath, "rb") as infile:
     icsv = csv.DictReader(infile)
 
     for field in [x_fieldname, y_fieldname]:
         if field not in icsv.fieldnames:
             print("Field not found in data file: "+str(field))
 
-    with open(sys.argv[5]) as ofile:
+    with open(sys.argv[5], "wb") as ofile:
         ocsv = csv.DictWriter(ofile, fieldnames=icsv.fieldnames+["AOI"])
+        ocsv.writeheader()
         for row in icsv:
 
             # deduce aoi
@@ -57,7 +58,7 @@ with open(dfpath) as infile:
             fix_aoi = None
 
             for i in range(len(aois)):
-                if is_inside(aois[i], fix_x, fix_y):
+                if is_inside(aois[i], int(fix_x), int(fix_y)):
                     fix_aoi = i
                     break
 

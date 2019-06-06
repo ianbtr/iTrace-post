@@ -79,14 +79,13 @@ for infile_name in infile_names:
             elif child_fname != current_fname:
                 current_file.close()
                 current_fname = child_fname
-                open_files[child_fname].open('ab')
-                current_file = open_files[child_fname]
+                current_file = open_files[child_fname] = open(outdir_name+"/"+child_fname+".csv", "ab")
                 ocsv = csv.DictWriter(current_file, fieldnames=[x_out, y_out, dur_out, t_out])
 
             # Write to output
             ocsv.writerow({
-                x_out: int(child.attrib[x_in])-1,
-                y_out: int(child.attrib[y_in])-1,
+                x_out: int(child.attrib[x_in]),
+                y_out: int(child.attrib[y_in]),
                 dur_out: 1.0, #TODO find a way to calculate duration?
                 t_out: int(child.attrib[t_in])
             })
