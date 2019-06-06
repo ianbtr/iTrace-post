@@ -20,16 +20,17 @@ ARGUMENTS: x_res: Width of stimulus in pixels
 
 RETURNS:   A numpy logical array where code AOI's are marked as ones.
 """
-def generate_code_aois(x_res, y_res, *args):
+
+def validate_arguments(arguments):
     # Validate data file path
-    data_fpath = args[0]
+    data_fpath = arguments[0]
     if not os.path.exists(data_fpath):
         print("ERROR: The relative path " + data_fpath + " does not "
                                                          "name a file in the system.")
         exit(1)
 
     # Validate integer numeric fields
-    for field in args[1:4]:
+    for field in arguments[1:4]:
         try:
             x = int(field)
         except ValueError as e:
@@ -37,13 +38,38 @@ def generate_code_aois(x_res, y_res, *args):
             raise e
 
     # Validate floating-point numeric fields
-    for field in args[4:6]:
+    for field in arguments[4:6]:
         try:
             x = float(field)
         except ValueError as e:
             print("ERROR: offset parameters must be valid floats")
             raise e
 
+def generate_char_aois(x_res, y_res, *args):
+    validate_arguments(args)
+
+    data_fpath = args[0]
+
+    # Disregard AOI type, and assume line AOI
+    # Assume unit font size and spacing with no offset
+    with open(data_fpath, "r") as infile:
+        code = infile.readlines()
+
+    # Replace all tabs with 4 spaces and remove trailing newlines
+    for i in range(len(code)):
+        code[i] = code[i].replace("\t", " "*4)
+        code[i] = code[i].replace("\n", "")
+
+    # Generate AOI's line by line
+    regions = np.zeros((y_res, x_res))
+    for i in range(len(code)):
+        if len(code[i]) == 0: continue
+        regions[i, 0:len(code[i])] = 1
+
+    return regions
+
+def generate_code_aois(x_res, y_res, *args):
+    data_fpath = args[0]
     font_size_x = int(args[1])
     font_size_y = int(args[2])
     font_spacing = int(args[3])
@@ -76,7 +102,6 @@ def generate_code_aois(x_res, y_res, *args):
     sub_aois = aois[aois.kind == "line"] if aoi_type == "line" \
         else aois[aois.kind == "token"]
 
-    #
     rects = list()
     for index, row in sub_aois.iterrows():
         rects.append(
