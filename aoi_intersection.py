@@ -14,13 +14,13 @@ warnings.filterwarnings("ignore")
 import sys
 import json
 import numpy as np
-import matplotlib.pyplot as plt
+#import matplotlib.pyplot as plt
 from structs import Rect
 from scipy.ndimage import label
 from gaze_aoi import generate_gaze_aois
 from code_aoi import generate_code_aois, generate_char_aois
-from matplotlib.patches import Rectangle
-from matplotlib.collections import PatchCollection
+#from matplotlib.patches import Rectangle
+#from matplotlib.collections import PatchCollection
 
 if len(sys.argv) != 16:
     print("USAGE: <python> aoi_intersection.py <image width> <image height> <code filepath> "
@@ -44,13 +44,13 @@ if sys.argv[4] == "1":
 # For actual pixels:
 else:
     code_mask = generate_code_aois(img_width, img_height, *(sys.argv[3:10]))
-plt.imshow(code_mask)
-plt.savefig("code_mask.png", dpi=200)
+#plt.imshow(code_mask)
+#plt.savefig("code_mask.png", dpi=200)
 
 # Compute gaze mask
 gaze_mask = generate_gaze_aois(img_width, img_height, *(sys.argv[10:]))
-plt.imshow(gaze_mask)
-plt.savefig("gaze_mask.png", dpi=200)
+#plt.imshow(gaze_mask)
+#plt.savefig("gaze_mask.png", dpi=200)
 
 # Merge masks
 mask_intersection = np.logical_and(code_mask, gaze_mask)
@@ -60,7 +60,7 @@ all_labels, num_features = label(mask_intersection)
 
 # Create rectangles
 rectangles = list()
-fig_rectangles = list()
+#fig_rectangles = list()
 for label in range(1, num_features+1):
     row_occurrences, col_occurrences = np.where(all_labels == label)
     left_extent = min(col_occurrences)
@@ -71,7 +71,7 @@ for label in range(1, num_features+1):
     rectangles.append(Rect(left_extent, right_extent,
                            top_extent, bottom_extent))
 
-
+"""
     fig_rectangles.append(Rectangle((left_extent, top_extent),
                                     right_extent - left_extent,
                                     bottom_extent - top_extent,
@@ -83,6 +83,7 @@ pc = PatchCollection(fig_rectangles, alpha=0.5, edgecolor='w')
 ax.add_collection(pc)
 plt.imshow(all_labels, cmap='Spectral')
 plt.savefig('rects.png', dpi=200)
+"""
 
 # Dump rectangles in order of area
 rectangles.sort(key=lambda rect: rect.area(), reverse=True)
