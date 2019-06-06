@@ -1,7 +1,8 @@
 """
 USAGE: <python> xml2csv.py <x-fix input fieldname> <y-fix input fieldname>
             <time input fieldname> <projectfile input fieldname> <x-fix output fieldname>
-            <y-fix output fieldname> <duration output fieldname> <output directory> <input files>
+            <y-fix output fieldname> <duration output fieldname> <time output fieldname>
+            <output directory> <input files>
 
 ARGUMENTS:
     1) x-fix input fieldname: The XML attribute corresponding to the x-location of fixations, in the iTrace log file.
@@ -24,16 +25,17 @@ import csv
 import xml.etree.ElementTree as ET
 
 # Validate and parse arguments
-if len(sys.argv) < 10:
+if len(sys.argv) < 11:
     print("USAGE: <python> xml2csv.py <x-fix input fieldname> <y-fix input fieldname> "
             "<time input fieldname> <projectfile input fieldname> <x-fix output fieldname> "
-            "<y-fix output fieldname> <duration output fieldname> <output directory> <input files>")
+            "<y-fix output fieldname> <duration output fieldname> <time output fieldname> "
+            "<output directory> <input files>")
     exit(1)
 
 x_in, y_in, t_in, fname_in = sys.argv[1:5]
-x_out, y_out, dur_out = sys.argv[5:8]
-outdir_name = sys.argv[8]
-infile_names = sys.argv[9:]
+x_out, y_out, dur_out, t_out = sys.argv[5:9]
+outdir_name = sys.argv[9]
+infile_names = sys.argv[10:]
 
 open_files = dict()
 
@@ -70,7 +72,7 @@ for infile_name in infile_names:
                 if current_file is not None: current_file.close()
                 current_fname = child_fname
                 current_file = open_files[child_fname] = open(outdir_name+"/"+child_fname+".csv", "wb")
-                ocsv = csv.DictWriter(current_file, fieldnames=[x_out, y_out, dur_out])
+                ocsv = csv.DictWriter(current_file, fieldnames=[x_out, y_out, dur_out, t_out])
                 ocsv.writeheader()
 
             # Switch to a file that was already opened
@@ -79,13 +81,14 @@ for infile_name in infile_names:
                 current_fname = child_fname
                 open_files[child_fname].open('ab')
                 current_file = open_files[child_fname]
-                ocsv = csv.DictWriter(current_file, fieldnames=[x_out, y_out, dur_out])
+                ocsv = csv.DictWriter(current_file, fieldnames=[x_out, y_out, dur_out, t_out])
 
             # Write to output
             ocsv.writerow({
                 x_out: int(child.attrib[x_in])-1,
                 y_out: int(child.attrib[y_in])-1,
-                dur_out: 1.0 #TODO find a way to calculate duration?
+                dur_out: 1.0, #TODO find a way to calculate duration?
+                t_out: int(child.attrib[t_in])
             })
 
 if current_file is not None: current_file.close()
