@@ -1,5 +1,5 @@
 """
-USAGE: <python> db2csv.py <input db path> <input tsv path> <code directory> <output directory>
+USAGE: <python> post2csv.py <input db path> <input tsv path> <code directory> <output directory>
     <smoothing> <threshold>
 
 ARGUMENTS:
@@ -21,7 +21,7 @@ from code_aoi import get_aoi_intersection, get_code_envelope
 # Validate arguments
 if len(sys.argv) < 7:
     print(
-        "USAGE: <python> db2csv.py <input db path> "
+        "USAGE: <python> post2csv.py <input db path> "
         "<input tsv path> <code directory> <output directory> "
         "<smoothing> <threshold>"
     )
