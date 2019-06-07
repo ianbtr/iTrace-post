@@ -4,6 +4,10 @@ import json
 import sqlite3
 import pandas as pd
 
+"""
+USAGE: post_to_csv( <path to iTrace output database>, 
+    <path to iTrace output TSV>, <relative path to output directory> )
+"""
 def post_to_csv(db_fpath, tsv_fpath, outdir_name):
     # Declare output fieldnames
     output_fieldnames = [
@@ -90,33 +94,39 @@ def is_inside(rectangle, x, y):
 """
 Takes a CSV with fixation data and appends a column specifying an AOI.
 
-USAGE: append_aoi( <data file path> <x field name> <y field name> <aoi json path> <output file path> )
+USAGE: append_aoi( <data file path>, <x field name>, <y field name>, 
+                <aoi json path>, <output file path> )
+                
+NOTE: The parameter <aoi json path> must refer to a JSON file containing a list of AOI's
+    in decreasing order of area. Each AOI is a rectangle of the following form:
+    
+    {
+        "T": <top edge of AOI>,
+        "L": <left edge of AOI>,
+        "B": <bottom edge of AOI>,
+        "R": <right edge of AOI>
+    }
 
-OUTPUT: The same CSV with an additional AOI column. AOI's are numbered 0-x, and a -1 indicates that the fixation is
-    not inside any of the given AOI's. If a fixation is inside multiple AOI's, the AOI numbers will be joined with a
-    forward slash.
+OUTPUT: The same CSV with an additional AOI column. AOI's are numbered beginning with zero, 
+    and a -1 indicates that the fixation is not inside any of the given AOI's. If a 
+    fixation is inside multiple AOI's, the AOI numbers will be joined with a forward slash.
 """
-def append_aoi(*args):
-    dfpath = args[0]
+def append_aoi(data_filepath, x_fieldname, y_fieldname, aoi_filepath, output_fpath):
 
-    if not os.path.exists(dfpath):
+    if not os.path.exists(data_filepath):
         raise ValueError(
-            "Data file does not exist at the given path: "+str(dfpath)
+            "Data file does not exist at the given path: "+str(data_filepath)
         )
 
-    json_fpath = args[3]
-
-    if not os.path.exists(json_fpath):
+    if not os.path.exists(aoi_filepath):
         raise ValueError(
-            "Data file does not exist at the given path: "+str(json_fpath)
+            "Data file does not exist at the given path: "+str(aoi_filepath)
         )
 
-    x_fieldname, y_fieldname = args[1:3]
-
-    with open(json_fpath) as infile:
+    with open(aoi_filepath) as infile:
         aois = json.load(infile)
 
-    with open(dfpath, "rb") as infile:
+    with open(data_filepath, "rb") as infile:
         icsv = csv.DictReader(infile)
 
         for field in [x_fieldname, y_fieldname]:
@@ -125,7 +135,7 @@ def append_aoi(*args):
                     "Field not found in data file: "+str(field)
                 )
 
-        with open(args[4], "wb") as ofile:
+        with open(output_fpath, "wb") as ofile:
             ocsv = csv.DictWriter(ofile, fieldnames=icsv.fieldnames+["AOI"])
             ocsv.writeheader()
             for row in icsv:

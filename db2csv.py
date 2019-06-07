@@ -58,9 +58,9 @@ for generated_file in generated_files:
         # Generate AOI
         ofile.write(
             get_aoi_intersection(
-                width, height, code_fpath, 1, 1,
-                0, 0, 0, "line", generated_file, "fix_col", "fix_line", "fix_dur",
-                smoothing, threshold
+                width, height, code_fpath, generated_file,
+                "fix_col", "fix_line", "fix_dur", smoothing=smoothing,
+                threshold=threshold
             )
         )
 

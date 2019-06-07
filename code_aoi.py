@@ -4,7 +4,6 @@ import json
 import numpy as np
 import scipy.ndimage
 from math import floor
-from eyecode import aoi
 from structs import Rect
 import scipy.signal as scs
 
@@ -23,26 +22,34 @@ def get_code_envelope(code_file):
     return max_width, line_count
 
 """
-USAGE: aoi_intersection( <image width> <image height> <code filepath>
-            <font size x> <font size y> <font vertical spacing> <x offset> <y offset>
-            ["line"|"token"] <gaze data file> <x field> <y field> <Duration field>
-            <Smoothing> <Threshold> )
+USAGE: aoi_intersection( <stimulus width>, <stimulus height>, <stimulus filepath>,
+    <gaze data filepath>, <x fieldname>, <y fieldname>, <duration fieldname>,
+    smoothing=<smoothing parameter>, threshold=<threshold parameter>,
+    character_resolution=[True|False], **kwargs)
+    
+Extra keyword arguments are used if character_resolution is False.
 
 NOTE: If <font size x> is given as 1, character resolution is assumed and all other
     font size fields are disregarded.
 """
-def get_aoi_intersection(img_width, img_height, *args):
+def get_aoi_intersection(img_width, img_height, code_filepath,
+        gaze_data_filepath, x_fieldname, y_fieldname, dur_fieldname,
+        smoothing=5.0, threshold=0.01, character_resolution=True, **kwargs):
+
+    if not character_resolution:
+        raise NotImplementedError(
+            "Pixel resolution is not currently supported."
+        )
+
     # Compute code mask for character-resolved stimulus
-    if args[1] == 1:
-        code_mask = generate_char_aois(img_width, img_height, *args[:7])
-    # For actual pixels:
-    else:
-        code_mask = generate_code_aois(img_width, img_height, *args[:7])
+    code_mask = generate_char_aois(code_filepath, img_width, img_height)
     # plt.imshow(code_mask)
     # plt.savefig("code_mask.png", dpi=200)
 
     # Compute gaze mask
-    gaze_mask = generate_gaze_aois(img_width, img_height, *args[7:])
+    gaze_mask = generate_gaze_aois(gaze_data_filepath, x_fieldname,
+        y_fieldname, dur_fieldname, img_width, img_height,
+        smoothing=smoothing, threshold=threshold)
     # plt.imshow(gaze_mask)
     # plt.savefig("gaze_mask.png", dpi=200)
 
@@ -84,23 +91,7 @@ def get_aoi_intersection(img_width, img_height, *args):
     rect_dict = list(map(lambda rect: rect.as_dict(), rectangles))
     return json.dumps(rect_dict)
 
-"""
-ARGUMENTS: x_res: Width of stimulus in pixels
-           y_res: Height of stimulus in pixels
-           
-           Additional required arguments:
-           1. Code file: A relative path to the code file for which you wish to generate AOI's.
-           2. Font x size: The width of the font in pixels.
-           3. Font y size: The height of the font in pixels.
-           4. Font vertical spacing: The vertical spacing of the font in pixels.
-           5. Global x offset: The amount by which the first line of code is shifted from the upper-left
-                corner of the stimulus, in pixels of width.
-           6. Global y offset: The amount by which the first line of code is shifted from the upper-left
-                corner of the stimulus, in pixels of height.
-           7. AOI type: Any of "line" or "token".
 
-RETURNS:   A numpy logical array where code AOI's are marked as ones.
-"""
 def validate_arguments(arguments):
     # Validate data file path
     data_fpath = arguments[0]
@@ -125,14 +116,26 @@ def validate_arguments(arguments):
             print("ERROR: offset parameters must be valid floats")
             raise e
 
-def generate_char_aois(x_res, y_res, *args):
-    validate_arguments(args)
+"""
+USAGE: generate_char_aois(<code filepath>, <number of columns>, <number of liens> )
+    
+OUTPUT: A logical numpy array corresponding to the location of code in the given file.
+    Each cell in the array corresponds to a character in the file, rather than a pixel.
+    
+NOTE: Tabs are assumed to be worth 4 spaces.
+"""
+def generate_char_aois(code_fpath, num_cols, num_lines):
+    # Validate data filepath
+    if not os.path.isfile(code_fpath):
+        raise ValueError(
+            "File not found: "+code_fpath
+        )
 
-    data_fpath = args[0]
+    x_res, y_res = num_cols, num_lines
 
     # Disregard AOI type, and assume line AOI
     # Assume unit font size and spacing with no offset
-    with open(data_fpath, "r") as infile:
+    with open(code_fpath, "r") as infile:
         code = infile.readlines()
 
     # Replace all tabs with 4 spaces and remove trailing newlines
@@ -147,6 +150,10 @@ def generate_char_aois(x_res, y_res, *args):
         regions[i, 0:len(code[i])] = 1
 
     return regions
+
+"""
+This code is for generating AOI's resolved to the pixel.
+It is not currently in use.
 
 def generate_code_aois(x_res, y_res, *args):
     data_fpath = args[0]
@@ -199,71 +206,46 @@ def generate_code_aois(x_res, y_res, *args):
         regions[rect.top : rect.bottom + 1, rect.left : rect.right + 1] = 1
 
     return regions
+"""
 
 
 """
-USAGE: generate_gaze_aois(<width> <height> <data as CSV> <X field> <Y field> <Duration field> <Smoothing> <Threshold>)
+USAGE: generate_gaze_aois(data_file, x_fieldname, y_fieldname, dur_fieldname,
+            stimulus_width, stimulus_height, smoothing=<smoothing parameter>,
+            threshold=<threshold parameter>)
 
-INPUT (Argument 1): The width of the stimulus, in pixels (INTEGER)
-      (Argument 2): The height of the stimulus, in pixels (INTEGER)
-      (Arguments 3-6): The relative path of a CSV with fields X, Y and duration, and the names of those fields as
-                        they appear in the file. Data is for all participants on a single stimulus.
-      (Argument 7): The smoothing parameter to apply during Gaussian smoothing. (FLOAT)
-      (Argument 8): The threshold above which the given pixel may be eliminated from the mask and assigned a logical
-                    value of 1. (FLOAT)
-
+INPUT: data_file: A CSV-style file containing x, y and duration fields for fixations on the given stimulus.
+       x_fieldname: The field name in the data file corresponding to the x-position of gazes.
+       y_fieldname: The field name in the data file corresponding to the y-positions of gazes.
+       dur_fieldname: The field name... corresponding to the duration of gazes.
+       
 OUTPUT: A logical array representing a mask due to the given smoothing and threshold parameters.
 """
-def generate_gaze_aois(*args):
+def generate_gaze_aois(data_file, x_fieldname, y_fieldname, dur_fieldname,
+                       stimulus_width, stimulus_height, smoothing=5.0, threshold=0.01):
     # Validate data file path
-    data_fpath = args[2]
-    if not os.path.exists(data_fpath):
-        print("ERROR: The relative path " + data_fpath + " does not name "
-                                                         "a file in the system.")
-        exit(1)
-
-    # Validate floating-point numeric fields
-    for field in args[6:8]:
-        try:
-            x = float(field)
-        except ValueError:
-            print("ERROR: smoothing and threshold fields must be valid floating-point numbers.")
-            exit(1)
-
-    smoothing_parameter = float(args[6])
-    masking_threshold = float(args[7])
-
-    # Validate integer numeric fields
-    for field in args[0:2]:
-        try:
-            x = int(field)
-        except ValueError:
-            print("ERROR: image size parameters must be valid integers.")
-            exit(1)
-
-    image_x_size = int(args[0])
-    image_y_size = int(args[1])
+    if not os.path.exists(data_file):
+        raise ValueError(
+            "ERROR: The relative path " + data_file + " does not name "
+            "a file in the system."
+        )
 
     # Read data file
     fix_x = list()
     fix_y = list()
     fix_dur = list()
-    with open(data_fpath, "r") as infile:
+
+    with open(data_file, "r") as infile:
         icsv = csv.DictReader(infile)
 
         # Validate fieldnames
-        for field in args[3:6]:
+        for field in x_fieldname, y_fieldname, dur_fieldname:
             if field not in icsv.fieldnames:
                 print("ERROR: The specified field, " + field + ", was "
-                                                               "not found in the data file, " + data_fpath)
+                    "not found in the data file, " + data_file)
                 exit(1)
 
-        x_fieldname = args[3]
-        y_fieldname = args[4]
-        dur_fieldname = args[5]
-
         # Read data
-
         for row in icsv:
             fix_x.append(float(row[x_fieldname]))
             fix_y.append(float(row[y_fieldname]))
@@ -273,27 +255,27 @@ def generate_gaze_aois(*args):
 
     # Smooth the data and create a mask
     [x, y] = np.meshgrid(
-        np.arange(-floor(image_x_size / 2.0) + 0.5,
-                  floor(image_x_size / 2.0) - 0.5),
-        np.arange(-floor(image_y_size / 2.0) + 0.5,
-                  floor(image_y_size / 2.0) - 0.5)
+        np.arange(-floor(stimulus_width / 2.0) + 0.5,
+                  floor(stimulus_width / 2.0) - 0.5),
+        np.arange(-floor(stimulus_height / 2.0) + 0.5,
+                  floor(stimulus_height / 2.0) - 0.5)
     )
 
-    gaussian = np.exp(- (x ** 2 / smoothing_parameter ** 2) -
-                      (y ** 2 / smoothing_parameter ** 2))
+    gaussian = np.exp(- (x ** 2 / smoothing ** 2) -
+                      (y ** 2 / smoothing ** 2))
     gaussian = (gaussian - np.min(gaussian[:])) / (np.max(gaussian[:]) - np.min(gaussian[:]))
 
-    fixmapMat = np.zeros((1, image_y_size, image_x_size))
+    fixmapMat = np.zeros((1, stimulus_height, stimulus_width))
 
     coordX = np.round(np.array(fix_x)).astype(int)
     coordY = np.round(np.array(fix_y)).astype(int)
     interval = np.array(fix_dur)
     index = np.logical_and(
         np.logical_and(coordX > 0, coordY > 0),
-        np.logical_and(coordX < image_x_size, coordY < image_y_size)
+        np.logical_and(coordX < stimulus_width, coordY < stimulus_height)
     )
 
-    rawmap = np.zeros((image_y_size, image_x_size))
+    rawmap = np.zeros((stimulus_height, stimulus_width))
 
     rawmap[coordY[index], coordX[index]] += interval[index]
 
@@ -301,4 +283,4 @@ def generate_gaze_aois(*args):
 
     fixmapMat[0][:][:] = (smoothed - np.mean(smoothed[:])) / np.std(smoothed[:])
 
-    return np.squeeze(np.mean(fixmapMat, 0)) > masking_threshold
+    return np.squeeze(np.mean(fixmapMat, 0)) > threshold
