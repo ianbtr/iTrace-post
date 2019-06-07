@@ -33,3 +33,4 @@ majority of subjects' gazes. This procedure is inspired by the [iMap](https://gi
 project.
 
 ## Where This Project Fits With Everything Else
+![alt text](img/chart.png)
