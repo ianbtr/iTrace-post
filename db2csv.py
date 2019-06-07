@@ -1,23 +1,29 @@
 """
-USAGE: <python> db2csv.py <input db path> <input tsv path> <output directory>
+USAGE: <python> db2csv.py <input db path> <input tsv path> <code directory> <output directory>
+    <smoothing> <threshold>
 
 ARGUMENTS:
     1. Input db path: SQL database file produced by iTrace post-processor.
     2. Input tsv path: TSV file produced by iTrace post-processor.
     3. Output directory: Path to desired directory (data will be split by object)
+    4. Smoothing: Smoothing parameter for Gaussian smoothing
+    5. Threshold: Threshold for generating AOI's from duration heatmap.
+        Consider that durations from iTrace are in nanoseconds. This number should probably be
+        about 1000 or higher.
 """
 
 import os
 import sys
-import csv
-import sqlite3
-import pandas as pd
+import glob
+from translation import post_to_csv, append_aoi
+from code_aoi import get_aoi_intersection, get_code_envelope
 
 # Validate arguments
-if len(sys.argv) < 4:
+if len(sys.argv) < 7:
     print(
         "USAGE: <python> db2csv.py <input db path> "
-        "<input tsv path> <output directory>"
+        "<input tsv path> <code directory> <output directory> "
+        "<smoothing> <threshold>"
     )
     exit(1)
 
@@ -29,80 +35,36 @@ for path in fpaths:
         )
         exit(1)
 
-db_fpath, tsv_fpath, outdir_name = sys.argv[1:4]
+db_fpath, tsv_fpath, code_dir, outdir_name = sys.argv[1:5]
+smoothing, threshold = map(float, sys.argv[5:8])
 
-# Declare output fieldnames
-output_fieldnames = [
-    "fix_col",
-    "fix_line",
-    "fix_time",
-    "fix_dur",
-    "which_file"
-]
+print("Translating database...\n")
+post_to_csv(db_fpath, tsv_fpath, outdir_name)
 
-# Read database into pandas dataframe
-conn = sqlite3.connect(db_fpath)
+# Get names of generated files
+generated_files = glob.glob(outdir_name+"/*.csv")
 
-# Select rows for which fixation_id is not null
-df = pd.read_sql_query(
-    "SELECT * FROM gazes WHERE fixation_id IS NOT NULL",
-    conn
-)
+print("Generating AOI's...")
+for generated_file in generated_files:
+    print("\t"+generated_file)
 
-# Multi-file output
-open_files = dict()
-if not os.path.isdir(outdir_name):
-    os.makedirs(outdir_name)
+    json_file = generated_file[:-4]+".json"
+    with open(json_file, "w") as ofile:
+        code_fname = generated_file[:-4].split("\\")[-1]
+        code_fpath = code_dir+"/"+code_fname
 
-# Open tsv
-with open(tsv_fpath, "rb") as infile:
-    itsv = csv.DictReader(infile, delimiter='\t')
+        width, height = get_code_envelope(code_fpath)
 
-    current_fname, current_file, ocsv = None, None, None
+        # Generate AOI
+        ofile.write(
+            get_aoi_intersection(
+                width, height, code_fpath, 1, 1,
+                0, 0, 0, "line", generated_file, "fix_col", "fix_line", "fix_dur",
+                smoothing, threshold
+            )
+        )
 
-    for input_row in itsv:
-        fix_id = int(input_row["FIXATION_ID"])
-
-        # Find all occurrences of this ID in the dataframe
-        id_data = df.loc[df['fixation_id'] == fix_id]
-
-        # Get fixation location by rounding the mean of line/column values
-        # TODO is this really such a great idea?
-        # TODO also we know that col_num is zero-indexed, but what about line_num?
-        means = id_data.loc[:, ['line_num', 'col_num']].mean()
-        mean_line, mean_col = means['line_num'], means['col_num']
-        nearest_line, nearest_col = int(round(mean_line)), int(round(mean_col))
-
-        # Get time stamp from df
-        # TODO this assumes that the rows are ordered by timestamp (pretty sure this is the case)
-        tstamp = id_data['time_stamp'].iloc[0]
-
-        # Get file name
-        fname = id_data['object_name'].iloc[0]
-
-        # Decide which file to write to
-        #  (New file)
-        if fname not in open_files.keys():
-            if current_fname is not None: current_file.close()
-            current_fname = fname
-            current_file = open_files[fname] = open(outdir_name + "/" + fname + ".csv", "wb")
-            ocsv = csv.DictWriter(current_file, fieldnames=output_fieldnames)
-            ocsv.writeheader()
-
-        # (File that was previously opened)
-        elif fname != current_fname:
-            current_file.close()
-            current_fname = fname
-            current_file = open_files[fname] = open(outdir_name + "/" + fname + ".csv", "ab")
-            ocsv = csv.DictWriter(current_file, fieldnames=output_fieldnames)
-
-        # Write to output file
-        ocsv.writerow({
-            "fix_col": nearest_col,
-            "fix_line": nearest_line,
-            "fix_time": tstamp,
-            "fix_dur": input_row["DURATION"],
-            "which_file": fname
-        })
-
-    if current_file is not None: current_file.close()
+    append_aoi(
+        generated_file, "fix_col", "fix_line",
+        json_file, generated_file[:-4]+"_AOI.csv"
+    )
