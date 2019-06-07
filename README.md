@@ -1,4 +1,4 @@
-#iTrace-post
+# iTrace-post
 A set of Python scripts for processing output from the [iTrace plugin](www.i-trace.org).
 Also performs automatic generation of Areas of Interest (AOI's) based on fixation data and
 code location.
@@ -33,4 +33,3 @@ majority of subjects' gazes. This procedure is inspired by the [iMap](https://gi
 project.
 
 ## Where This Project Fits With Everything Else
-(Image here)
