@@ -109,31 +109,6 @@ def get_aoi_intersection(img_width, img_height, code_filepath,
     rect_dict = list(map(lambda rect: rect.as_dict(), rectangles))
     return json.dumps(rect_dict)
 
-
-def validate_arguments(arguments):
-    # Validate data file path
-    data_fpath = arguments[0]
-    if not os.path.exists(data_fpath):
-        print("ERROR: The relative path " + data_fpath + " does not "
-                                                         "name a file in the system.")
-        exit(1)
-
-    # Validate integer numeric fields
-    for field in arguments[1:4]:
-        try:
-            x = int(field)
-        except ValueError as e:
-            print("ERROR: font size parameters must be valid integers")
-            raise e
-
-    # Validate floating-point numeric fields
-    for field in arguments[4:6]:
-        try:
-            x = float(field)
-        except ValueError as e:
-            print("ERROR: offset parameters must be valid floats")
-            raise e
-
 """
 USAGE: generate_char_aois(<code filepath>, <number of columns>, <number of liens> )
     
