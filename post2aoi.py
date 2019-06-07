@@ -1,5 +1,5 @@
 """
-USAGE: <python> post2csv.py <input db path> <input tsv path> <code directory> <output directory>
+USAGE: <python> post2aoi.py <input db path> <input tsv path> <code directory> <output directory>
     <smoothing> <threshold>
 
 ARGUMENTS:
@@ -15,13 +15,12 @@ ARGUMENTS:
 import os
 import sys
 import glob
-from translation import post_to_csv, append_aoi
-from code_aoi import get_aoi_intersection, get_code_envelope
+from itrace_post import *
 
 # Validate arguments
 if len(sys.argv) < 7:
     print(
-        "USAGE: <python> post2csv.py <input db path> "
+        "USAGE: <python> post2aoi.py <input db path> "
         "<input tsv path> <code directory> <output directory> "
         "<smoothing> <threshold>"
     )

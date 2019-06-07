@@ -2,7 +2,7 @@ import os
 import csv
 import json
 import sqlite3
-import pandas as pd
+import pandas
 
 """
 USAGE: post_to_csv( <path to iTrace output database>, 
@@ -22,7 +22,7 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
     conn = sqlite3.connect(db_fpath)
 
     # Select rows for which fixation_id is not null
-    df = pd.read_sql_query(
+    df = pandas.read_sql_query(
         "SELECT * FROM gazes WHERE fixation_id IS NOT NULL",
         conn
     )
@@ -95,9 +95,9 @@ def is_inside(rectangle, x, y):
 Takes a CSV with fixation data and appends a column specifying an AOI.
 
 USAGE: append_aoi( <data file path>, <x field name>, <y field name>, 
-                <aoi json path>, <output file path> )
+                <itrace_post json path>, <output file path> )
                 
-NOTE: The parameter <aoi json path> must refer to a JSON file containing a list of AOI's
+NOTE: The parameter <itrace_post json path> must refer to a JSON file containing a list of AOI's
     in decreasing order of area. Each AOI is a rectangle of the following form:
     
     {
@@ -140,7 +140,7 @@ def append_aoi(data_filepath, x_fieldname, y_fieldname, aoi_filepath, output_fpa
             ocsv.writeheader()
             for row in icsv:
 
-                # deduce aoi
+                # deduce itrace_post
                 fix_x = row[x_fieldname]
                 fix_y = row[y_fieldname]
                 fix_aoi = None

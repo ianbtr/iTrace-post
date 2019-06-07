@@ -1,10 +1,10 @@
 import os
 import csv
 import json
-import numpy as np
+import numpy
 import scipy.ndimage
 from math import floor
-import scipy.signal as scs
+import scipy.signal
 
 """
 A rectangle class
@@ -60,19 +60,19 @@ def get_aoi_intersection(img_width, img_height, code_filepath,
         )
 
     # Compute code mask for character-resolved stimulus
-    code_mask = generate_char_aois(code_filepath, img_width, img_height)
+    code_mask = generate_code_mask(code_filepath, img_width, img_height)
     # plt.imshow(code_mask)
     # plt.savefig("code_mask.png", dpi=200)
 
     # Compute gaze mask
-    gaze_mask = generate_gaze_aois(gaze_data_filepath, x_fieldname,
+    gaze_mask = generate_gaze_mask(gaze_data_filepath, x_fieldname,
         y_fieldname, dur_fieldname, img_width, img_height,
         smoothing=smoothing, threshold=threshold)
     # plt.imshow(gaze_mask)
     # plt.savefig("gaze_mask.png", dpi=200)
 
     # Merge masks
-    mask_intersection = np.logical_and(code_mask, gaze_mask)
+    mask_intersection = numpy.logical_and(code_mask, gaze_mask)
 
     # Identify regions
     all_labels, num_features = scipy.ndimage.label(mask_intersection)
@@ -81,7 +81,7 @@ def get_aoi_intersection(img_width, img_height, code_filepath,
     rectangles = list()
     # fig_rectangles = list()
     for label in range(1, num_features + 1):
-        row_occurrences, col_occurrences = np.where(all_labels == label)
+        row_occurrences, col_occurrences = numpy.where(all_labels == label)
         left_extent = min(col_occurrences)
         right_extent = max(col_occurrences)
         top_extent = min(row_occurrences)
@@ -117,7 +117,7 @@ OUTPUT: A logical numpy array corresponding to the location of code in the given
     
 NOTE: Tabs are assumed to be worth 4 spaces.
 """
-def generate_char_aois(code_fpath, num_cols, num_lines):
+def generate_code_mask(code_fpath, num_cols, num_lines):
     # Validate data filepath
     if not os.path.isfile(code_fpath):
         raise ValueError(
@@ -137,7 +137,7 @@ def generate_char_aois(code_fpath, num_cols, num_lines):
         code[i] = code[i].replace("\n", "")
 
     # Generate AOI's line by line
-    regions = np.zeros((y_res, x_res))
+    regions = numpy.zeros((y_res, x_res))
     for i in range(len(code)):
         if len(code[i]) == 0: continue
         regions[i, 0:len(code[i])] = 1
@@ -170,7 +170,7 @@ def generate_code_aois(x_res, y_res, *args):
     code = code.replace("\t", " " * 4)
 
     # Generate AOI's
-    aois = aoi.code_to_aois(code, filename=data_fpath, font_size=(font_size_x, font_size_y),
+    aois = itrace_post.code_to_aois(code, filename=data_fpath, font_size=(font_size_x, font_size_y),
                             line_offset=font_spacing)
 
     # Add offset to all entries
@@ -192,7 +192,7 @@ def generate_code_aois(x_res, y_res, *args):
         )
 
     # Create logical array
-    regions = np.zeros((y_res, x_res))
+    regions = numpy.zeros((y_res, x_res))
     for rect in rects:
         if rect.top < 0: rect.top = 0
         if rect.left < 0: rect.left = 0
@@ -207,14 +207,14 @@ USAGE: generate_gaze_aois(data_file, x_fieldname, y_fieldname, dur_fieldname,
             stimulus_width, stimulus_height, smoothing=<smoothing parameter>,
             threshold=<threshold parameter>)
 
-INPUT: data_file: A CSV-style file containing x, y and duration fields for fixations on the given stimulus.
+InumpyUT: data_file: A CSV-style file containing x, y and duration fields for fixations on the given stimulus.
        x_fieldname: The field name in the data file corresponding to the x-position of gazes.
        y_fieldname: The field name in the data file corresponding to the y-positions of gazes.
        dur_fieldname: The field name... corresponding to the duration of gazes.
        
 OUTPUT: A logical array representing a mask due to the given smoothing and threshold parameters.
 """
-def generate_gaze_aois(data_file, x_fieldname, y_fieldname, dur_fieldname,
+def generate_gaze_mask(data_file, x_fieldname, y_fieldname, dur_fieldname,
                        stimulus_width, stimulus_height, smoothing=5.0, threshold=0.01):
     # Validate data file path
     if not os.path.exists(data_file):
@@ -247,33 +247,33 @@ def generate_gaze_aois(data_file, x_fieldname, y_fieldname, dur_fieldname,
     # TRANSLATION OF MATLAB SCRIPT:
 
     # Smooth the data and create a mask
-    [x, y] = np.meshgrid(
-        np.arange(-floor(stimulus_width / 2.0) + 0.5,
+    [x, y] = numpy.meshgrid(
+        numpy.arange(-floor(stimulus_width / 2.0) + 0.5,
                   floor(stimulus_width / 2.0) - 0.5),
-        np.arange(-floor(stimulus_height / 2.0) + 0.5,
+        numpy.arange(-floor(stimulus_height / 2.0) + 0.5,
                   floor(stimulus_height / 2.0) - 0.5)
     )
 
-    gaussian = np.exp(- (x ** 2 / smoothing ** 2) -
+    gaussian = numpy.exp(- (x ** 2 / smoothing ** 2) -
                       (y ** 2 / smoothing ** 2))
-    gaussian = (gaussian - np.min(gaussian[:])) / (np.max(gaussian[:]) - np.min(gaussian[:]))
+    gaussian = (gaussian - numpy.min(gaussian[:])) / (numpy.max(gaussian[:]) - numpy.min(gaussian[:]))
 
-    fixmapMat = np.zeros((1, stimulus_height, stimulus_width))
+    fixmapMat = numpy.zeros((1, stimulus_height, stimulus_width))
 
-    coordX = np.round(np.array(fix_x)).astype(int)
-    coordY = np.round(np.array(fix_y)).astype(int)
-    interval = np.array(fix_dur)
-    index = np.logical_and(
-        np.logical_and(coordX > 0, coordY > 0),
-        np.logical_and(coordX < stimulus_width, coordY < stimulus_height)
+    coordX = numpy.round(numpy.array(fix_x)).astype(int)
+    coordY = numpy.round(numpy.array(fix_y)).astype(int)
+    interval = numpy.array(fix_dur)
+    index = numpy.logical_and(
+        numpy.logical_and(coordX > 0, coordY > 0),
+        numpy.logical_and(coordX < stimulus_width, coordY < stimulus_height)
     )
 
-    rawmap = np.zeros((stimulus_height, stimulus_width))
+    rawmap = numpy.zeros((stimulus_height, stimulus_width))
 
     rawmap[coordY[index], coordX[index]] += interval[index]
 
-    smoothed = scs.fftconvolve(rawmap, gaussian, mode='same')
+    smoothed = scipy.signal.fftconvolve(rawmap, gaussian, mode='same')
 
-    fixmapMat[0][:][:] = (smoothed - np.mean(smoothed[:])) / np.std(smoothed[:])
+    fixmapMat[0][:][:] = (smoothed - numpy.mean(smoothed[:])) / numpy.std(smoothed[:])
 
-    return np.squeeze(np.mean(fixmapMat, 0)) > threshold
+    return numpy.squeeze(numpy.mean(fixmapMat, 0)) > threshold
