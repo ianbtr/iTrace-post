@@ -29,8 +29,8 @@ characters, such as spaces, are not removed from the code mask. This procedure i
 ### Generating A Mask From Gaze Data
 Gazes' durations are placed in a 2D numpy array, organized by gaze position. This array is smoothed
 using Gaussian smoothing, and then a threshold is applied to reveal regions that attracted the 
-majority of subjects' gazes. This procedure is inspired by the [iMap](https://github.com/iBMLab/iMap4)
-project.
+majority of subjects' gazes. This procedure is inspired by the masking algorithm in the
+[iMap](https://github.com/iBMLab/iMap4) project.
 
 ## Where This Project Fits With Everything Else
 ![alt text](img/chart.png)
