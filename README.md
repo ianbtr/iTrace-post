@@ -3,6 +3,14 @@ A module (and a bonus script) for processing output from the [iTrace plugin](www
 Also performs automatic generation of Areas of Interest (AOI's) based on fixation data and
 code location.
 
+## Quick Start
+Run `setup.py` like this:  
+```$ python setup.py install```  
+As soon as this completes, you're ready to import the `itrace_post` module into 
+your project. Please note that you will need to copy the script `post2aoi.py` if 
+you wish to use it in your project. You may also wish to use this script as an 
+example when writing a similar script to read output from iTrace.
+
 ## Translation of iTrace Files
 The `gaze2src` program is a part of the iTrace program suite that performs post-processing 
 on raw iTrace data. The resulting data are stored in a tab-separated file and a 

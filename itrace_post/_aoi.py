@@ -7,7 +7,7 @@ from math import floor
 import scipy.signal
 
 """
-A rectangle class
+A Rectangle class
 """
 class Rect:
     def __init__(self, left, right, top, bottom):
