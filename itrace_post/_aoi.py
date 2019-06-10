@@ -147,7 +147,7 @@ def generate_code_mask(code_fpath, num_cols, num_lines):
         # Get beginning of trailing whitespace
         line_end = len(code[i].rstrip())
 
-        regions[line_start, line_end] = 1
+        regions[i, line_start:line_end] = 1
 
     return regions
 
