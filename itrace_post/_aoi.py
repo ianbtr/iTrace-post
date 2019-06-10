@@ -140,7 +140,14 @@ def generate_code_mask(code_fpath, num_cols, num_lines):
     regions = numpy.zeros((y_res, x_res))
     for i in range(len(code)):
         if len(code[i]) == 0: continue
-        regions[i, 0:len(code[i])] = 1
+
+        # Get end of leading whitespace
+        line_start = len(code[i]) - len(code[i].lstrip())
+
+        # Get beginning of trailing whitespace
+        line_end = len(code[i].rstrip())
+
+        regions[line_start, line_end] = 1
 
     return regions
 
