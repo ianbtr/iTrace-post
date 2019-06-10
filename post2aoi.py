@@ -15,6 +15,7 @@ ARGUMENTS:
 import os
 import sys
 import glob
+import json
 from itrace_post import *
 
 # Validate arguments
@@ -55,12 +56,15 @@ for generated_file in generated_files:
         width, height = get_code_envelope(code_fpath)
 
         # Generate AOI
-        ofile.write(
+        mask, labels, rectangles = \
             get_aoi_intersection(
                 width, height, code_fpath, generated_file,
                 "fix_col", "fix_line", "fix_dur", smoothing=smoothing,
                 threshold=threshold
             )
+
+        ofile.write(
+            json.dumps(rectangles)
         )
 
     append_aoi(

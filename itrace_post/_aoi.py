@@ -49,6 +49,9 @@ Extra keyword arguments are used if character_resolution is False.
 
 NOTE: If <font size x> is given as 1, character resolution is assumed and all other
     font size fields are disregarded.
+    
+OUTPUT: A triple containing a mask, a labeled mask, and a list of dictionaries describing
+    rectangles that inscribe each distinct region in the mask.
 """
 def get_aoi_intersection(img_width, img_height, code_filepath,
         gaze_data_filepath, x_fieldname, y_fieldname, dur_fieldname,
@@ -107,7 +110,7 @@ def get_aoi_intersection(img_width, img_height, code_filepath,
     # Dump rectangles in order of area
     rectangles.sort(key=lambda rect: rect.area(), reverse=True)
     rect_dict = list(map(lambda rect: rect.as_dict(), rectangles))
-    return json.dumps(rect_dict)
+    return mask_intersection, all_labels, rect_dict
 
 """
 USAGE: generate_char_aois(<code filepath>, <number of columns>, <number of liens> )
