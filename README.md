@@ -1,5 +1,5 @@
 # iTrace-post
-A set of Python scripts for processing output from the [iTrace plugin](www.i-trace.org).
+A module (and a bonus script) for processing output from the [iTrace plugin](www.i-trace.org).
 Also performs automatic generation of Areas of Interest (AOI's) based on fixation data and
 code location.
 
