@@ -54,8 +54,9 @@ OUTPUT: A triple containing a mask, a labeled mask, and a list of dictionaries d
     rectangles that inscribe each distinct region in the mask.
 """
 def get_aoi_intersection(img_width, img_height, code_filepath,
-        gaze_data_filepath, x_fieldname, y_fieldname, dur_fieldname,
-        smoothing=5.0, threshold=0.01, character_resolution=True, **kwargs):
+        gaze_data_filepath, x_fieldname="fix_col", y_fieldname="fix_line",
+        dur_fieldname="fix_dur", smoothing=5.0, threshold=0.01,
+        character_resolution=True, **kwargs):
 
     if not character_resolution:
         raise NotImplementedError(
@@ -68,8 +69,8 @@ def get_aoi_intersection(img_width, img_height, code_filepath,
     # plt.savefig("code_mask.png", dpi=200)
 
     # Compute gaze mask
-    gaze_mask = generate_gaze_mask(gaze_data_filepath, x_fieldname,
-        y_fieldname, dur_fieldname, img_width, img_height,
+    gaze_mask = generate_gaze_mask(gaze_data_filepath, img_width, img_height,
+        x_fieldname=x_fieldname, y_fieldname=y_fieldname, dur_fieldname=dur_fieldname,
         smoothing=smoothing, threshold=threshold)
     # plt.imshow(gaze_mask)
     # plt.savefig("gaze_mask.png", dpi=200)
@@ -213,19 +214,17 @@ def generate_code_aois(x_res, y_res, *args):
 
 
 """
-USAGE: generate_gaze_aois(data_file, x_fieldname, y_fieldname, dur_fieldname,
-            stimulus_width, stimulus_height, smoothing=<smoothing parameter>,
-            threshold=<threshold parameter>)
-
-InumpyUT: data_file: A CSV-style file containing x, y and duration fields for fixations on the given stimulus.
+INPUT: data_file: A CSV-style file containing x, y and duration fields for fixations on the given stimulus.
        x_fieldname: The field name in the data file corresponding to the x-position of gazes.
        y_fieldname: The field name in the data file corresponding to the y-positions of gazes.
        dur_fieldname: The field name... corresponding to the duration of gazes.
        
 OUTPUT: A logical array representing a mask due to the given smoothing and threshold parameters.
 """
-def generate_gaze_mask(data_file, x_fieldname, y_fieldname, dur_fieldname,
-                       stimulus_width, stimulus_height, smoothing=5.0, threshold=0.01):
+def generate_gaze_mask(data_file, stimulus_width, stimulus_height,
+        x_fieldname="fix_col", y_fieldname="fix_line", dur_fieldname="fix_dur",
+        smoothing=5.0, threshold=0.01):
+
     # Validate data file path
     if not os.path.exists(data_file):
         raise ValueError(

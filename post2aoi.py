@@ -59,7 +59,8 @@ for generated_file in generated_files:
         mask, labels, rectangles = \
             get_aoi_intersection(
                 width, height, code_fpath, generated_file,
-                "fix_col", "fix_line", "fix_dur", smoothing=smoothing,
+                x_fieldname="fix_col", y_fieldname="fix_line",
+                dur_fieldname="fix_dur", smoothing=smoothing,
                 threshold=threshold
             )
 
