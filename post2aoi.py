@@ -48,22 +48,22 @@ print("Generating AOI's...")
 for generated_file in generated_files:
     print("\t"+generated_file)
 
-    json_file = generated_file[:-4]+".json"
+    code_fname = generated_file[:-4].split("\\")[-1]
+    code_fpath = code_dir+"/"+code_fname
+
+    width, height = get_code_envelope(code_fpath)
+
+    # Generate AOI
+    mask, labels, rectangles = \
+        get_aoi_intersection(
+            width, height, code_fpath, generated_file,
+            x_fieldname="fix_col", y_fieldname="fix_line",
+            dur_fieldname="fix_dur", smoothing=smoothing,
+            threshold=threshold
+        )
+
+    json_file = generated_file[:-4] + "_AOI.json"
     with open(json_file, "w") as ofile:
-        code_fname = generated_file[:-4].split("\\")[-1]
-        code_fpath = code_dir+"/"+code_fname
-
-        width, height = get_code_envelope(code_fpath)
-
-        # Generate AOI
-        mask, labels, rectangles = \
-            get_aoi_intersection(
-                width, height, code_fpath, generated_file,
-                x_fieldname="fix_col", y_fieldname="fix_line",
-                dur_fieldname="fix_dur", smoothing=smoothing,
-                threshold=threshold
-            )
-
         ofile.write(
             json.dumps(rectangles)
         )
