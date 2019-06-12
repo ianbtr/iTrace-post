@@ -4,6 +4,6 @@ setup(
     name='itrace_post',
     version='0.0dev',
     packages=['itrace_post',],
-    license='MIT License',
+    license='None',
     long_description="A package for processing output from the iTrace plugin."
 )
