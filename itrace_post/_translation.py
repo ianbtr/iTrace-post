@@ -6,6 +6,7 @@ import sqlite3
 import pandas
 from ._aoi import get_code_envelope, get_aoi_intersection
 
+
 def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold):
     print("Translating database...\n")
     post_to_csv(db_fpath, tsv_fpath, outdir_name)
@@ -42,10 +43,13 @@ def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold
             json_file, generated_file[:-4]+"_AOI.csv"
         )
 
+
 """
 USAGE: post_to_csv( <path to iTrace output database>, 
     <path to iTrace output TSV>, <relative path to output directory> )
 """
+
+
 def post_to_csv(db_fpath, tsv_fpath, outdir_name):
     # Declare output fieldnames
     output_fieldnames = [
@@ -82,15 +86,16 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
             # Find all occurrences of this ID in the dataframe
             id_data = df.loc[df['fixation_id'] == fix_id]
 
+            # There might not be any (if this is the case, continue)
+            if id_data.shape[0] == 0:
+                continue
+
             # Get fixation location by rounding the mean of line/column values
-            # TODO is this really such a great idea?
-            # TODO also we know that col_num is zero-indexed, but what about line_num?
             means = id_data.loc[:, ['line_num', 'col_num']].mean()
             mean_line, mean_col = means['line_num'], means['col_num']
             nearest_line, nearest_col = int(round(mean_line)), int(round(mean_col))
 
             # Get time stamp from df
-            # TODO this assumes that the rows are ordered by timestamp (pretty sure this is the case)
             tstamp = id_data['time_stamp'].iloc[0]
 
             # Get file name
@@ -99,7 +104,8 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
             # Decide which file to write to
             #  (New file)
             if fname not in open_files.keys():
-                if current_fname is not None: current_file.close()
+                if current_fname is not None:
+                    current_file.close()
                 current_fname = fname
                 current_file = open_files[fname] = open(outdir_name + "/" + fname + ".csv", "w", newline="")
                 ocsv = csv.DictWriter(current_file, fieldnames=output_fieldnames)
@@ -121,13 +127,14 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
                 "which_file": fname
             })
 
-        if current_file is not None: current_file.close()
+        if current_file is not None:
+            current_file.close()
+
 
 def is_inside(rectangle, x, y):
-    return x >= int(rectangle["L"]) and \
-        x <= int(rectangle["R"]) and \
-        y >= int(rectangle["T"]) and \
-        y <= int(rectangle["B"])
+    return int(rectangle["R"]) >= x >= int(rectangle["L"]) and \
+        int(rectangle["B"]) >= y >= int(rectangle["T"])
+
 
 """
 Takes a CSV with fixation data and appends a column specifying an AOI.
@@ -149,6 +156,8 @@ OUTPUT: The same CSV with an additional AOI column. AOI's are numbered beginning
     and a -1 indicates that the fixation is not inside any of the given AOI's. If a 
     fixation is inside multiple AOI's, the AOI numbers will be joined with a forward slash.
 """
+
+
 def append_aoi(data_filepath, x_fieldname, y_fieldname, aoi_filepath, output_fpath):
 
     if not os.path.exists(data_filepath):

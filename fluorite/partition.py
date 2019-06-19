@@ -9,7 +9,7 @@ import datetime
 import pandas as pd
 import glob
 import os
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree
 
 """
 A partitioner for gaze data.
@@ -28,7 +28,7 @@ class GazeDataPartition:
 
     def read_xml_data(self, plugin_filename, offset_ms):  # TODO this part is kinda slow
         # Read plugin file
-        tree = ET.parse(plugin_filename)
+        tree = xml.etree.ElementTree.parse(plugin_filename)
         root = tree.getroot()
         gazes = root[1]
 
@@ -87,10 +87,10 @@ class GazeDataPartition:
     format="csv":
         save the dataframe to a CSV, with the name of the file being output_name.
     """
-    def save_partition(self, output_name, format="xml"):
-        if format is "csv":
+    def save_partition(self, output_name, formatting="xml"):
+        if formatting is "csv":
             self.data.to_csv(output_name)
-        elif format is "xml":
+        elif formatting is "xml":
             infile = open(self.data_filename, "r")
             xml_lines = infile.readlines()
             infile.close()
@@ -102,7 +102,7 @@ class GazeDataPartition:
                 data_part = self.data[self.data["Partition"] == i]
                 first_row = data_part.iloc[0]["row_num"]
                 last_row = data_part.iloc[-1]["row_num"]
-                lines_to_write = xml_lines[first_line + first_row : first_line + last_row]
+                lines_to_write = xml_lines[first_line + first_row: first_line + last_row]
 
                 # Find directory to write to
                 existing_partition = glob.glob(output_name+"/"+str(i)+"_*-*")

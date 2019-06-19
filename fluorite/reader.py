@@ -3,11 +3,13 @@ A set of classes that detect and compile edits to the code.
 """
 
 import os
-import xml.etree.ElementTree as ET
+import xml.etree.ElementTree
 
 """
 Event base class.
 """
+
+
 class DocumentChange:
     def __init__(self, token_start, start_time, changed_file, **kwargs):
         self.token_start = int(token_start)
@@ -18,6 +20,7 @@ class DocumentChange:
         if "end_time" in kwargs.keys() and kwargs["end_time"] is not None:
             self.time_2 = kwargs["end_time"]
             self.repeat = True
+
 
 """
 Information regarding a particular insertion,
@@ -31,11 +34,14 @@ start_time = the unix timestamp of when this event occured (milliseconds)
 **kwargs = optional extra info from fluorite to represent events that have two timestamps
     (Use keyword end_time)
 """
+
+
 class InsertionEvent(DocumentChange):
     def __init__(self, token_start=None, start_time=None,
                  string_inserted=None, changed_file=None, **kwargs):
         DocumentChange.__init__(self, token_start, start_time, changed_file, **kwargs)
         self.string_inserted = str(string_inserted)
+
 
 """
 Information regarding a particular deletion,
@@ -44,16 +50,19 @@ corresponding to an XML element such as
 
 Parameters:
 token_start = the index into the first place in the file(stored as a string) where this event occurs
-token_end = the index into the last place in the file(stored as a string) where this event finishes its deletion (one past the end)
-tstamp = the unix timestamp of when this event occured (milliseconds)
+token_end = the index into the last place in the file(stored as a string) where this event finishes its deletion 
+(one past the end) tstamp = the unix timestamp of when this event occured (milliseconds)
 **kwargs = optional extra info from fluorite to represent events that have two timestamps
     (Use keyword end_time)
 """
+
+
 class DeletionEvent(DocumentChange):
     def __init__(self, token_start=None, start_time=None,
                  token_end=None, changed_file=None, **kwargs):
         DocumentChange.__init__(self, token_start, start_time, changed_file, **kwargs)
         self.token_end = int(token_end)
+
 
 """
 Information regarding a replaced string,
@@ -66,6 +75,8 @@ replace_with = the string that we are replacing the selected text with
 tstamp = the unix timestamp of when this event occured (milliseconds)
 **kwargs = optional extra info from fluorite to represent events that have two timestamps
 """
+
+
 class ReplaceEvent(DocumentChange):
     def __init__(self, token_start=None, start_time=None,
                  token_end=None, replace_with=None,
@@ -83,6 +94,8 @@ Parameters:
 filename = the name of the file that a history is being recorded for
 intial_content = the original contents of that file
 """
+
+
 class FileHistory:
     def __init__(self, filename, initial_content):
         self.filename = str(filename)
@@ -111,7 +124,8 @@ class FileHistory:
                 content = content[:change.token_start] + \
                     change.replace_with + content[change.token_end:]
 
-            else: raise AssertionError("Bad type in change list: "+str(type(change)))
+            else:
+                raise AssertionError("Bad type in change list: "+str(type(change)))
 
         return content
 
@@ -123,18 +137,21 @@ class FileHistory:
     def update_history(self, change):
         if type(change) not in [InsertionEvent, DeletionEvent, ReplaceEvent]:
             raise ValueError(
-                "Cannot append non-event type "+
+                "Cannot append non-event type " +
                 str(type(change))+" to FileHistory object"
             )
 
         self.changes.append(change)
         self.changes.sort(key=lambda c: c.time_1)
 
+
 """
 Breaks the log file into several FileHistory objects
 
 logfile = path to the XML Fluorite log file
 """
+
+
 class ProjectHistory:
     def __init__(self, logfile):
         self.logfile = logfile
@@ -155,14 +172,15 @@ class ProjectHistory:
                 "made in the log file "+str(self.logfile)
             )
 
-        else: return self.project_files[filename]\
-            .get_snapshot(timestamp, units)
+        else:
+            return self.project_files[filename]\
+                .get_snapshot(timestamp, units)
 
     """
     Parse the log file. (Only performed on construction).
     """
     def parse_logfile(self):
-        tree = ET.parse(self.logfile)
+        tree = xml.etree.ElementTree.parse(self.logfile)
         root = tree.getroot()
 
         # Get time at which the IDE was launched.
@@ -175,7 +193,7 @@ class ProjectHistory:
 
         if self.line_separator != "\r\n" and self.line_separator != "\n":
             raise NotImplementedError(
-                "Line separator not supported: "+root.attrib['lineSeparator']+
+                "Line separator not supported: "+root.attrib['lineSeparator'] +
                 "\nPlease report this issue."
             )
 
@@ -185,7 +203,7 @@ class ProjectHistory:
 
             # Parse FileOpenCommand elements
             if child.tag == "Command" and \
-            child.attrib["_type"] == "FileOpenCommand":
+                    child.attrib["_type"] == "FileOpenCommand":
                 snapshot_text = None
                 for grandchild in child:
 
@@ -193,8 +211,10 @@ class ProjectHistory:
                         current_file = grandchild.text
 
                     elif grandchild.tag == "snapshot":
-                        if grandchild.text is None: snapshot_text = ""
-                        else: snapshot_text = grandchild.text
+                        if grandchild.text is None:
+                            snapshot_text = ""
+                        else:
+                            snapshot_text = grandchild.text
 
                 if current_file is None:
                     raise ValueError(
@@ -252,11 +272,13 @@ class ProjectHistory:
                         end_time=time_2
                     )
 
-                else: continue
+                else:
+                    continue
 
                 self.project_files[current_file].update_history(change)
 
-            else: continue # ELSE: tag is neither of 'DocumentChange' or 'FileOpenCommand'
+            else:
+                continue  # ELSE: tag is neither of 'DocumentChange' or 'FileOpenCommand'
 
     def get_all_changes(self):
         # Form global change list

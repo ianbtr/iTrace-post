@@ -9,12 +9,15 @@ import scipy.signal
 """
 A Rectangle class
 """
+
+
 class Rect:
     def __init__(self, left, right, top, bottom):
         self.left = left
         self.right = right
         self.top = top
         self.bottom = bottom
+
     def as_dict(self):
         return {
             "L": int(self.left),
@@ -22,22 +25,28 @@ class Rect:
             "T": int(self.top),
             "B": int(self.bottom)
         }
+
     def area(self):
         return (self.right - self.left) * (self.bottom - self.top)
+
 
 """
 Get the exact dimensions of the given code file in columns and lines.
 """
+
+
 def get_code_envelope(code_file):
     with open(code_file, "r") as infile:
         lines = infile.readlines()
 
     max_width, line_count = 0, 0
     for line in lines:
-        if len(line) > max_width: max_width = len(line)
+        if len(line) > max_width:
+            max_width = len(line)
         line_count += 1
 
     return max_width, line_count
+
 
 """
 USAGE: aoi_intersection( <stimulus width>, <stimulus height>, <stimulus filepath>,
@@ -53,10 +62,12 @@ NOTE: If <font size x> is given as 1, character resolution is assumed and all ot
 OUTPUT: A triple containing a mask, a labeled mask, and a list of dictionaries describing
     rectangles that inscribe each distinct region in the mask.
 """
-def get_aoi_intersection(img_width, img_height, code_filepath,
-        gaze_data_filepath, x_fieldname="fix_col", y_fieldname="fix_line",
-        dur_fieldname="fix_dur", smoothing=5.0, threshold=0.01,
-        character_resolution=True, **kwargs):
+
+
+def get_aoi_intersection(img_width, img_height, code_filepath, gaze_data_filepath,
+                         x_fieldname="fix_col", y_fieldname="fix_line",
+                         dur_fieldname="fix_dur", smoothing=5.0, threshold=0.01,
+                         character_resolution=True):
 
     if not character_resolution:
         raise NotImplementedError(
@@ -70,8 +81,9 @@ def get_aoi_intersection(img_width, img_height, code_filepath,
 
     # Compute gaze mask
     gaze_mask = generate_gaze_mask(gaze_data_filepath, img_width, img_height,
-        x_fieldname=x_fieldname, y_fieldname=y_fieldname, dur_fieldname=dur_fieldname,
-        smoothing=smoothing, threshold=threshold)
+                                   x_fieldname=x_fieldname, y_fieldname=y_fieldname,
+                                   dur_fieldname=dur_fieldname, smoothing=smoothing,
+                                   threshold=threshold)
     # plt.imshow(gaze_mask)
     # plt.savefig("gaze_mask.png", dpi=200)
 
@@ -113,6 +125,7 @@ def get_aoi_intersection(img_width, img_height, code_filepath,
     rect_dict = list(map(lambda rect: rect.as_dict(), rectangles))
     return mask_intersection, all_labels, rect_dict
 
+
 """
 USAGE: generate_char_aois(<code filepath>, <number of columns>, <number of liens> )
     
@@ -121,6 +134,8 @@ OUTPUT: A logical numpy array corresponding to the location of code in the given
     
 NOTE: Tabs are assumed to be worth 4 spaces.
 """
+
+
 def generate_code_mask(code_fpath, num_cols, num_lines):
     # Validate data filepath
     if not os.path.isfile(code_fpath):
@@ -143,7 +158,8 @@ def generate_code_mask(code_fpath, num_cols, num_lines):
     # Generate AOI's line by line
     regions = numpy.zeros((y_res, x_res))
     for i in range(len(code)):
-        if len(code[i]) == 0: continue
+        if len(code[i]) == 0:
+            continue
 
         # Get end of leading whitespace
         line_start = len(code[i]) - len(code[i].lstrip())
@@ -154,6 +170,7 @@ def generate_code_mask(code_fpath, num_cols, num_lines):
         regions[i, line_start:line_end] = 1
 
     return regions
+
 
 """
 This code is for generating AOI's resolved to the pixel.
@@ -221,9 +238,11 @@ INPUT: data_file: A CSV-style file containing x, y and duration fields for fixat
        
 OUTPUT: A logical array representing a mask due to the given smoothing and threshold parameters.
 """
-def generate_gaze_mask(data_file, stimulus_width, stimulus_height,
-        x_fieldname="fix_col", y_fieldname="fix_line", dur_fieldname="fix_dur",
-        smoothing=5.0, threshold=0.01):
+
+
+def generate_gaze_mask(data_file, stimulus_width, stimulus_height, x_fieldname="fix_col",
+                       y_fieldname="fix_line", dur_fieldname="fix_dur", smoothing=5.0,
+                       threshold=0.01):
 
     # Validate data file path
     if not os.path.exists(data_file):
@@ -243,8 +262,8 @@ def generate_gaze_mask(data_file, stimulus_width, stimulus_height,
         # Validate fieldnames
         for field in x_fieldname, y_fieldname, dur_fieldname:
             if field not in icsv.fieldnames:
-                print("ERROR: The specified field, " + field + ", was "
-                    "not found in the data file, " + data_file)
+                print("ERROR: The specified field, " + field +
+                      ", was not found in the data file, " + data_file)
                 exit(1)
 
         # Read data
@@ -257,32 +276,29 @@ def generate_gaze_mask(data_file, stimulus_width, stimulus_height,
 
     # Smooth the data and create a mask
     [x, y] = numpy.meshgrid(
-        numpy.arange(-floor(stimulus_width / 2.0) + 0.5,
-                  floor(stimulus_width / 2.0) - 0.5),
-        numpy.arange(-floor(stimulus_height / 2.0) + 0.5,
-                  floor(stimulus_height / 2.0) - 0.5)
+        numpy.arange(-floor(stimulus_width / 2.0) + 0.5, floor(stimulus_width / 2.0) - 0.5),
+        numpy.arange(-floor(stimulus_height / 2.0) + 0.5, floor(stimulus_height / 2.0) - 0.5)
     )
 
-    gaussian = numpy.exp(- (x ** 2 / smoothing ** 2) -
-                      (y ** 2 / smoothing ** 2))
+    gaussian = numpy.exp(- (x ** 2 / smoothing ** 2) - (y ** 2 / smoothing ** 2))
     gaussian = (gaussian - numpy.min(gaussian[:])) / (numpy.max(gaussian[:]) - numpy.min(gaussian[:]))
 
-    fixmapMat = numpy.zeros((1, stimulus_height, stimulus_width))
+    fixmap_mat = numpy.zeros((1, stimulus_height, stimulus_width))
 
-    coordX = numpy.round(numpy.array(fix_x)).astype(int)
-    coordY = numpy.round(numpy.array(fix_y)).astype(int)
+    coord_x = numpy.round(numpy.array(fix_x)).astype(int)
+    coord_y = numpy.round(numpy.array(fix_y)).astype(int)
     interval = numpy.array(fix_dur)
     index = numpy.logical_and(
-        numpy.logical_and(coordX > 0, coordY > 0),
-        numpy.logical_and(coordX < stimulus_width, coordY < stimulus_height)
+        numpy.logical_and(coord_x > 0, coord_y > 0),
+        numpy.logical_and(coord_x < stimulus_width, coord_y < stimulus_height)
     )
 
     rawmap = numpy.zeros((stimulus_height, stimulus_width))
 
-    rawmap[coordY[index], coordX[index]] += interval[index]
+    rawmap[coord_y[index], coord_x[index]] += interval[index]
 
     smoothed = scipy.signal.fftconvolve(rawmap, gaussian, mode='same')
 
-    fixmapMat[0][:][:] = (smoothed - numpy.mean(smoothed[:])) / numpy.std(smoothed[:])
+    fixmap_mat[0][:][:] = (smoothed - numpy.mean(smoothed[:])) / numpy.std(smoothed[:])
 
-    return numpy.squeeze(numpy.mean(fixmapMat, 0)) > threshold
+    return numpy.squeeze(numpy.mean(fixmap_mat, 0)) > threshold
