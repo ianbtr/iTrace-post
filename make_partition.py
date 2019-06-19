@@ -17,7 +17,7 @@ time_offset = -1*3600*1000
 data_part = GazeDataPartition("eclipse_log.xml", time_offset)
 
 # Specify the length of a time segment and separate the data
-time_delta = 10000
+time_delta = 120000
 data_part.create_partition(time_delta)
 
 # Save a corresponding file timeline
@@ -49,5 +49,5 @@ for sub_dir in os.listdir("timeline"):
     fixations_tsv = glob.glob(itrace_prefix + "/fixations*.tsv")[0]
     fixations_db = glob.glob(itrace_prefix + "/rawgazes*.db3")[0]
 
-    subprocess.run(["python", "post2aoi.py", fixations_db, fixations_tsv, prefix+"/code_files",
+    subprocess.run(["py", "post2aoi.py", fixations_db, fixations_tsv, prefix+"/code_files",
                     prefix+"/post2aoi", "5.0", "0.01"])

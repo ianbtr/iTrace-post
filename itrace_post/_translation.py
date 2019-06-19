@@ -33,7 +33,7 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
         os.makedirs(outdir_name)
 
     # Open tsv
-    with open(tsv_fpath, "rb") as infile:
+    with open(tsv_fpath, "r", newline="") as infile:
         itsv = csv.DictReader(infile, delimiter='\t')
 
         current_fname, current_file, ocsv = None, None, None
@@ -63,7 +63,7 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
             if fname not in open_files.keys():
                 if current_fname is not None: current_file.close()
                 current_fname = fname
-                current_file = open_files[fname] = open(outdir_name + "/" + fname + ".csv", "wb")
+                current_file = open_files[fname] = open(outdir_name + "/" + fname + ".csv", "w", newline="")
                 ocsv = csv.DictWriter(current_file, fieldnames=output_fieldnames)
                 ocsv.writeheader()
 
@@ -71,7 +71,7 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
             elif fname != current_fname:
                 current_file.close()
                 current_fname = fname
-                current_file = open_files[fname] = open(outdir_name + "/" + fname + ".csv", "ab")
+                current_file = open_files[fname] = open(outdir_name + "/" + fname + ".csv", "a", newline="")
                 ocsv = csv.DictWriter(current_file, fieldnames=output_fieldnames)
 
             # Write to output file
@@ -126,7 +126,7 @@ def append_aoi(data_filepath, x_fieldname, y_fieldname, aoi_filepath, output_fpa
     with open(aoi_filepath) as infile:
         aois = json.load(infile)
 
-    with open(data_filepath, "rb") as infile:
+    with open(data_filepath, "r", newline="") as infile:
         icsv = csv.DictReader(infile)
 
         for field in [x_fieldname, y_fieldname]:
@@ -135,7 +135,7 @@ def append_aoi(data_filepath, x_fieldname, y_fieldname, aoi_filepath, output_fpa
                     "Field not found in data file: "+str(field)
                 )
 
-        with open(output_fpath, "wb") as ofile:
+        with open(output_fpath, "w", newline="") as ofile:
             ocsv = csv.DictWriter(ofile, fieldnames=icsv.fieldnames+["AOI"])
             ocsv.writeheader()
             for row in icsv:
