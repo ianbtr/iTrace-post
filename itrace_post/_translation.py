@@ -1,8 +1,46 @@
 import os
 import csv
 import json
+import glob
 import sqlite3
 import pandas
+from ._aoi import get_code_envelope, get_aoi_intersection
+
+def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold):
+    print("Translating database...\n")
+    post_to_csv(db_fpath, tsv_fpath, outdir_name)
+
+    # Get names of generated files
+    generated_files = glob.glob(outdir_name+"/*.csv")
+
+    print("Generating AOI's...")
+    for generated_file in generated_files:
+        print("\t"+generated_file)
+
+        code_fname = generated_file[:-4].split("\\")[-1]
+        code_fpath = code_dir+"/"+code_fname
+
+        width, height = get_code_envelope(code_fpath)
+
+        # Generate AOI
+        mask, labels, rectangles = \
+            get_aoi_intersection(
+                width, height, code_fpath, generated_file,
+                x_fieldname="fix_col", y_fieldname="fix_line",
+                dur_fieldname="fix_dur", smoothing=smoothing,
+                threshold=threshold
+            )
+
+        json_file = generated_file[:-4] + "_AOI.json"
+        with open(json_file, "w") as ofile:
+            ofile.write(
+                json.dumps(rectangles)
+            )
+
+        append_aoi(
+            generated_file, "fix_col", "fix_line",
+            json_file, generated_file[:-4]+"_AOI.csv"
+        )
 
 """
 USAGE: post_to_csv( <path to iTrace output database>, 
@@ -23,7 +61,7 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
 
     # Select rows for which fixation_id is not null
     df = pandas.read_sql_query(
-        "SELECT * FROM gazes WHERE fixation_id IS NOT NULL",
+        "SELECT * FROM gazes WHERE fixation_id IS NOT NULL AND line_num IS NOT NULL AND col_num IS NOT NULL",
         conn
     )
 
