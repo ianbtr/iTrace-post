@@ -9,7 +9,7 @@ setup(
 )
 
 setup(
-    name='itrace_post',
+    name='fluorite',
     version='0.0dev',
     packages=['fluorite', ],
     license='None',
