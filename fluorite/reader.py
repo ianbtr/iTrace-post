@@ -103,7 +103,7 @@ intial_content = the original contents of that file
 class FileHistory:
     def __init__(self, filename, initial_content,
                  initial_functions=None):
-        self.initial_functions = dict(initial_functions)
+        self.initial_functions = initial_functions
         self.filename = str(filename)
         self.initial_content = initial_content
         self.changes = list()
@@ -189,8 +189,9 @@ class ProjectHistory:
     def __init__(self, logfile, func_location_file=None):
         self.logfile = logfile
 
-        with open(func_location_file) as infile:
-            self.initial_functions = json.load(infile)
+        if func_location_file is not None:
+            with open(func_location_file) as infile:
+                self.initial_functions = json.load(infile)
 
         self.project_files = dict()
 
@@ -267,9 +268,13 @@ class ProjectHistory:
 
                     # Construct FileHistory object from file snapshot and file name
                     short_name = trim_filename(current_file)
-                    self.project_files[short_name] = \
-                        FileHistory(short_name, snapshot_text,
-                                    initial_functions=self.initial_functions[short_name])
+                    try:
+                        self.project_files[short_name] = \
+                            FileHistory(short_name, snapshot_text,
+                                        initial_functions=self.initial_functions[short_name])
+                    except AttributeError:
+                        self.project_files[short_name] = \
+                            FileHistory(short_name, snapshot_text,)
 
             # Parse DocumentChange elements
             elif child.tag == "DocumentChange":
@@ -340,7 +345,8 @@ class ProjectHistory:
 
         for filehist in self.project_files.values():
             short_filename = trim_filename(filehist.filename)
-            snapshot, functions = filehist.get_snapshot(target_time).replace(self.line_separator, "\n")
+            snapshot, functions = filehist.get_snapshot(target_time)
+            snapshot = snapshot.replace(self.line_separator, "\n")
             with open(target_dir + "/" + short_filename, "w") as ofile:
                 ofile.write(snapshot)
 

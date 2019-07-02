@@ -32,16 +32,18 @@ class GazeDataPartition:
         root = tree.getroot()
         gazes = root[1]
 
-        df_cols = ["fix_time", "row_num"]
-        self.data = pd.DataFrame(columns=df_cols)
+        df_dict = {"fix_time": [], "row_num": []}
 
         index = 0
+
+        print("Ingesting data...")
+
         for response in gazes:
-            self.data = self.data.append(pd.DataFrame({
-                "fix_time": [response.attrib['timestamp']],
-                "row_num": [index]
-            }))
+            df_dict["fix_time"].append(response.attrib['timestamp'])
+            df_dict["row_num"].append(index)
             index += 1
+
+        self.data = pd.DataFrame.from_dict(df_dict)
 
         # Create epoch time column
         try:

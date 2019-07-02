@@ -18,7 +18,7 @@ time_offset = -1*3600*1000
 data_part = GazeDataPartition("eclipse_log.xml", time_offset)
 
 # Specify the length of a time segment and separate the data
-time_delta = 10**6
+time_delta = 120000
 data_part.create_partition(time_delta)
 
 # Save a corresponding file timeline
