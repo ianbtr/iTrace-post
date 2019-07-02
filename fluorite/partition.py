@@ -44,7 +44,10 @@ class GazeDataPartition:
             index += 1
 
         # Create epoch time column
-        epoch = datetime.datetime.fromtimestamp(0)
+        try:
+            epoch = datetime.datetime.fromtimestamp(0)
+        except OSError:
+            epoch = datetime.datetime.utcfromtimestamp(0)
 
         self.data["sys_time"] = list(map(
             lambda dt_str: (datetime.datetime.strptime(dt_str[:-6], "%Y-%m-%dT%H:%M:%S.%f") - epoch)

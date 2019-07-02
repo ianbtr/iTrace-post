@@ -3,6 +3,7 @@ A set of classes that detect and compile edits to the code.
 """
 
 import os
+import json
 import xml.etree.ElementTree
 
 """
@@ -59,9 +60,11 @@ token_end = the index into the last place in the file(stored as a string) where 
 
 class DeletionEvent(DocumentChange):
     def __init__(self, token_start=None, start_time=None,
-                 token_end=None, changed_file=None, **kwargs):
+                 token_end=None, string_deleted=None,
+                 changed_file=None, **kwargs):
         DocumentChange.__init__(self, token_start, start_time, changed_file, **kwargs)
         self.token_end = int(token_end)
+        self.string_deleted = string_deleted
 
 
 """
@@ -97,7 +100,9 @@ intial_content = the original contents of that file
 
 
 class FileHistory:
-    def __init__(self, filename, initial_content):
+    def __init__(self, filename, initial_content,
+                 initial_functions=None):
+        self.initial_functions = initial_functions
         self.filename = str(filename)
         self.initial_content = initial_content
         self.changes = list()
@@ -105,9 +110,11 @@ class FileHistory:
     """
     Get a snapshot of this file at a particular time stamp.
     Units are in milliseconds.
+    Second return value is a dictionary of functions.
     """
     def get_snapshot(self, timestamp):
         content = self.initial_content
+        functions = self.initial_functions
         for change in self.changes:
             if timestamp < change.time_1:
                 break
@@ -116,18 +123,39 @@ class FileHistory:
                 content = content[:change.token_start] + \
                     change.string_inserted + content[change.token_start:]
 
+                if functions is not None and '\n' in change.string_inserted:
+                    lines_added = change.string_inserted.count("\n")
+                    prior_string = content[:change.token_start]
+                    line_num_start = prior_string.count("\n")
+                    functions = update_functions(functions, line_num_start, lines_added)
+
             elif type(change) is DeletionEvent:
                 content = content[:change.token_start] + \
                     content[change.token_end:]
 
+                if functions is not None and '\n' in change.string_deleted:
+                    lines_removed = change.string_deleted.count("\n")
+                    prior_string = content[:change.token_start]
+                    line_num_start = prior_string.count("\n")
+                    functions = update_functions(functions, line_num_start, -1 * lines_removed)
+
             elif type(change) is ReplaceEvent:
+                string_removed = content[change.token_start: change.token_end + 1]
                 content = content[:change.token_start] + \
                     change.replace_with + content[change.token_end:]
+
+                if functions is not None and ('\n' in string_removed or '\n' in change.replace_with):
+                    net_lines_added = change.replace_with.count("\n") - string_removed.count("\n")
+                    if net_lines_added == 0:
+                        continue
+                    prior_string = content[:change.token_start]
+                    line_num_start = prior_string.count("\n")
+                    functions = update_functions(functions, line_num_start, net_lines_added)
 
             else:
                 raise AssertionError("Bad type in change list: "+str(type(change)))
 
-        return content
+        return content, functions
 
     """
     Update the object by passing an XML element representing
@@ -149,20 +177,30 @@ class FileHistory:
 Breaks the log file into several FileHistory objects
 
 logfile = path to the XML Fluorite log file
+
+func_location_file = path to a JSON file describing the INITIAL
+    locations of functions in the project. This dataset will be
+    regenerated and returned with each call to get_snapshot().
 """
 
 
 class ProjectHistory:
-    def __init__(self, logfile):
+    def __init__(self, logfile, func_location_file=None):
         self.logfile = logfile
+
+        with open(func_location_file) as infile:
+            self.initial_functions = json.load(infile)
+
         self.project_files = dict()
+
         self.launch_time = None
         self.line_separator = None
+
         self.parse_logfile()
 
     """
     Get a snapshot of a given file at a particular time stamp.
-    Returns the entire snapshot as a string.
+    Returns the entire snapshot as a string, as well as function positions if any.
     The 'units' keyword argument must be either 'seconds' or 'milliseconds'.
     """
     def get_snapshot(self, filename, timestamp, units="seconds"):
@@ -227,8 +265,10 @@ class ProjectHistory:
                     snapshot_text = snapshot_text.replace("\n", self.line_separator)
 
                     # Construct FileHistory object from file snapshot and file name
-                    self.project_files[current_file] = \
-                        FileHistory(current_file, snapshot_text)
+                    short_name = trim_filename(current_file)
+                    self.project_files[short_name] = \
+                        FileHistory(short_name, snapshot_text,
+                                    initial_functions=self.initial_functions[short_name])
 
             # Parse DocumentChange elements
             elif child.tag == "DocumentChange":
@@ -243,11 +283,13 @@ class ProjectHistory:
                     time_2 = self.launch_time + int(child.attrib['timestamp2'])
 
                 if child.attrib['_type'] == "Delete":
+                    sd = child[0].text.replace("\n", self.line_separator)
                     change = DeletionEvent(
                         token_start=int(child.attrib['offset']),
                         start_time=self.launch_time + int(child.attrib['timestamp']),
                         token_end=int(child.attrib['offset']) + int(child.attrib['length']),
                         changed_file=current_file,
+                        string_deleted=sd,
                         end_time=time_2
                     )
 
@@ -296,10 +338,14 @@ class ProjectHistory:
             os.makedirs(target_dir)
 
         for filehist in self.project_files.values():
-            short_filename = filehist.filename.split("\\")[-1].split("/")[-1]
-            snapshot = filehist.get_snapshot(target_time).replace(self.line_separator, "\n")
+            short_filename = trim_filename(filehist.filename)
+            snapshot, functions = filehist.get_snapshot(target_time).replace(self.line_separator, "\n")
             with open(target_dir + "/" + short_filename, "w") as ofile:
                 ofile.write(snapshot)
+
+            if functions is not None:
+                with open(target_dir + "/functions.json", "w") as ofile:
+                    json.dump(functions, ofile)
 
     """
     Save a file timeline. Granularity is finest by default, meaning
@@ -386,3 +432,27 @@ class ProjectHistory:
 
         self.save_snapshots(str(count) + "_" + str(final_time),
                             "inf", final_time+1, directory_path)
+
+
+"""
+A utility function to determine the position of functions after a change.
+"""
+
+
+def update_functions(functions, first_line, net_added):
+    for name, line_range in functions:
+        if line_range[0] > first_line:
+            line_range[0] += net_added
+        if line_range[1] > first_line:
+            line_range[1] += net_added
+
+    return functions
+
+
+"""
+Gets the last bit of a filename
+"""
+
+
+def trim_filename(name):
+    return name.split("\\")[-1].split("/")[-1]
