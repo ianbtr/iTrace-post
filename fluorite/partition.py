@@ -35,9 +35,6 @@ class GazeDataPartition:
         df_dict = {"fix_time": [], "row_num": []}
 
         index = 0
-
-        print("Ingesting data...")
-
         for response in gazes:
             df_dict["fix_time"].append(response.attrib['timestamp'])
             df_dict["row_num"].append(index)

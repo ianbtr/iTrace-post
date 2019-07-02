@@ -8,16 +8,12 @@ from ._aoi import get_code_envelope, get_aoi_intersection
 
 
 def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold):
-    print("Translating database...\n")
     post_to_csv(db_fpath, tsv_fpath, outdir_name)
 
     # Get names of generated files
     generated_files = glob.glob(outdir_name+"/*.csv")
 
-    print("Generating AOI's...")
     for generated_file in generated_files:
-        print("\t"+generated_file)
-
         code_fname = generated_file[:-4].split("\\")[-1]
         code_fpath = code_dir+"/"+code_fname
 

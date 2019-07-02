@@ -5,8 +5,11 @@ An example script (TODO make a notebook instead.)
 import os
 import glob
 import subprocess
+from subprocess import DEVNULL
 from fluorite import ProjectHistory, GazeDataPartition
 from itrace_post import post_to_aoi
+
+print("Partitioning data...")
 
 # Create a ProjectHistory object from a Fluorite log file
 phist = ProjectHistory("fluorite_log.xml")
@@ -32,18 +35,26 @@ data_part.save_partition("timeline")
 core_fpath = "core_log.xml"
 
 # Each folder in the "timeline" directory should now have enough data to run srcml, gaze2src and iTrace-post.
-for sub_dir in os.listdir("timeline"):
+print("Running gaze2src and generating AOIs...")
+
+dirs = os.listdir("timeline")
+
+for sub_dir in dirs:
+    print("\t"+sub_dir)
     prefix = "timeline/"+sub_dir
 
     # Create a tarball of code files
-    subprocess.run(["tar", "-cvzf", prefix+"/src.tar.gz", prefix+"/code_files"])
+    subprocess.run(["tar", "-czf", prefix+"/src.tar.gz", prefix+"/code_files"],
+                   stdout=DEVNULL, stderr=DEVNULL)
 
     # Run srcml
-    subprocess.run(["srcml", prefix+"/src.tar.gz", "-o", prefix+"/src.xml"])
+    subprocess.run(["srcml", prefix+"/src.tar.gz", "-o", prefix+"/src.xml"],
+                   stdout=DEVNULL, stderr=DEVNULL)
 
     # Run gaze2src TODO allow external configuration of gaze2src and iTrace-post parameters
     subprocess.run(["gaze2src", core_fpath, prefix+"/plugin_log.xml", prefix+"/src.xml",
-                    "-f", "ivt", "-v 45", "-u 1", "-o", prefix+"/gaze2src"])
+                    "-f", "ivt", "-v 45", "-u 1", "-o", prefix+"/gaze2src"],
+                   stdout=DEVNULL, stderr=DEVNULL)
 
     # Run iTrace-post
     itrace_prefix = prefix + "/gaze2src"
