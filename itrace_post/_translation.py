@@ -57,6 +57,8 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
         "fix_line",
         "fix_time",
         "fix_dur",
+        "pixel_x",
+        "pixel_y",
         "which_file"
     ]
 
@@ -101,6 +103,9 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
             # Get file name
             fname = id_data['object_name'].iloc[0]
 
+            # Get x, y coordinates
+            pixel_x, pixel_y = input_row["X"], input_row["Y"]
+
             # Decide which file to write to
             #  (New file)
             if fname not in open_files.keys():
@@ -124,6 +129,8 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
                 "fix_line": nearest_line,
                 "fix_time": tstamp,
                 "fix_dur": input_row["DURATION"],
+                "pixel_x": pixel_x,
+                "pixel_y": pixel_y,
                 "which_file": fname
             })
 
