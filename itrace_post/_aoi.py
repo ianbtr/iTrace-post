@@ -27,7 +27,7 @@ class Rect:
         }
 
     def area(self):
-        return (self.right - self.left) * (self.bottom - self.top)
+        return (self.right - self.left + 1) * (self.bottom - self.top + 1)
 
 
 """

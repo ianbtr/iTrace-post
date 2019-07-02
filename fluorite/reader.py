@@ -4,6 +4,7 @@ A set of classes that detect and compile edits to the code.
 
 import os
 import json
+import copy
 import xml.etree.ElementTree
 
 """
@@ -102,7 +103,7 @@ intial_content = the original contents of that file
 class FileHistory:
     def __init__(self, filename, initial_content,
                  initial_functions=None):
-        self.initial_functions = initial_functions
+        self.initial_functions = dict(initial_functions)
         self.filename = str(filename)
         self.initial_content = initial_content
         self.changes = list()
@@ -114,7 +115,7 @@ class FileHistory:
     """
     def get_snapshot(self, timestamp):
         content = self.initial_content
-        functions = self.initial_functions
+        functions = copy.deepcopy(self.initial_functions)
         for change in self.changes:
             if timestamp < change.time_1:
                 break
@@ -203,7 +204,7 @@ class ProjectHistory:
     Returns the entire snapshot as a string, as well as function positions if any.
     The 'units' keyword argument must be either 'seconds' or 'milliseconds'.
     """
-    def get_snapshot(self, filename, timestamp, units="seconds"):
+    def get_snapshot(self, filename, timestamp):
         if filename not in self.project_files.keys():
             raise ValueError(
                 "No mention of "+str(filename)+" is "
@@ -212,7 +213,7 @@ class ProjectHistory:
 
         else:
             return self.project_files[filename]\
-                .get_snapshot(timestamp, units)
+                .get_snapshot(timestamp)
 
     """
     Parse the log file. (Only performed on construction).
@@ -317,7 +318,7 @@ class ProjectHistory:
                 else:
                     continue
 
-                self.project_files[current_file].update_history(change)
+                self.project_files[trim_filename(current_file)].update_history(change)
 
             else:
                 continue  # ELSE: tag is neither of 'DocumentChange' or 'FileOpenCommand'
@@ -440,10 +441,10 @@ A utility function to determine the position of functions after a change.
 
 
 def update_functions(functions, first_line, net_added):
-    for name, line_range in functions:
+    for name, line_range in functions.items():
         if line_range[0] > first_line:
             line_range[0] += net_added
-        if line_range[1] > first_line:
+        if line_range[1] >= first_line:
             line_range[1] += net_added
 
     return functions
