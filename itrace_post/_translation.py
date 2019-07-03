@@ -207,3 +207,28 @@ def append_aoi(data_filepath, x_fieldname, y_fieldname, aoi_filepath, output_fpa
 
                 out_row["AOI"] = str(fix_aoi)
                 ocsv.writerow(out_row)
+
+
+"""
+Add a function columnn to the data, based on a file containing function locations.
+"""
+
+
+def append_function(data_filepath, line_fieldname, function_dict, output_fpath):
+    with open(data_filepath, "r") as infile:
+        icsv = csv.DictReader(infile)
+
+    with open(output_fpath, "w") as ofile:
+        ocsv = csv.DictWriter(ofile, fieldnames=icsv.fieldnames + ["function"])
+        for row in icsv:
+            out_row = dict(row)
+            line_num = row[line_fieldname]
+            out_row["function"] = get_function_name(line_num, function_dict)
+            ocsv.writerow(out_row)
+
+
+def get_function_name(line_num, function_dict):
+    for key, loc in function_dict.items():
+        if loc[0] <= line_num <= loc[1]:
+            return key
+    return "NONE"
