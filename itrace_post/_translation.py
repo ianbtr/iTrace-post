@@ -7,7 +7,7 @@ import pandas
 from ._aoi import get_code_envelope, get_aoi_intersection
 
 
-def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold):
+def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold, func_dict=None):
     post_to_csv(db_fpath, tsv_fpath, outdir_name)
 
     # Get names of generated files
@@ -38,6 +38,16 @@ def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold
             generated_file, "fix_col", "fix_line",
             json_file, generated_file[:-4]+"_AOI.csv"
         )
+
+        if func_dict is not None:
+            aoi_file = generated_file[:-4]+"_AOI.csv"
+
+            with open(func_dict) as infile:
+                func_file = json.load(infile)[code_fname]
+
+            append_function(
+                aoi_file, "fix_line", func_file, aoi_file[:-4]+"_functions.csv"
+            )
 
 
 """

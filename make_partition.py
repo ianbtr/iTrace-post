@@ -62,4 +62,4 @@ for sub_dir in dirs:
     fixations_db = glob.glob(itrace_prefix + "/rawgazes*.db3")[0]
 
     post_to_aoi(fixations_db, fixations_tsv, prefix+"/code_files",
-                prefix+"/post2aoi", 5.0, 0.01)
+                prefix+"/post2aoi", 5.0, 0.01, func_dict="Foo")  # TODO download function dict
