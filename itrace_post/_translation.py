@@ -43,7 +43,7 @@ def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold
             aoi_file = generated_file[:-4]+"_AOI.csv"
 
             with open(func_dict) as infile:
-                func_file = json.load(infile)[code_fname]
+                func_file = json.load(infile)[code_fname[:-5]]
 
             append_function(
                 aoi_file, "fix_line", func_file, aoi_file[:-4]+"_functions.csv"
@@ -65,6 +65,8 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
         "fix_dur",
         "pixel_x",
         "pixel_y",
+        "left_pupil",
+        "right_pupil",
         "which_file"
     ]
 
@@ -112,6 +114,9 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
             # Get x, y coordinates
             pixel_x, pixel_y = input_row["X"], input_row["Y"]
 
+            # Get pupil dilation
+            diameter_L, diameter_R = input_row["LEFT_PUPIL"], input_row["RIGHT_PUPIL"]
+
             # Decide which file to write to
             #  (New file)
             if fname not in open_files.keys():
@@ -137,6 +142,8 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
                 "fix_dur": input_row["DURATION"],
                 "pixel_x": pixel_x,
                 "pixel_y": pixel_y,
+                "left_pupil": diameter_L,
+                "right_pupil": diameter_R,
                 "which_file": fname
             })
 
@@ -228,17 +235,18 @@ def append_function(data_filepath, line_fieldname, function_dict, output_fpath):
     with open(data_filepath, "r") as infile:
         icsv = csv.DictReader(infile)
 
-    with open(output_fpath, "w") as ofile:
-        ocsv = csv.DictWriter(ofile, fieldnames=icsv.fieldnames + ["function"])
-        for row in icsv:
-            out_row = dict(row)
-            line_num = row[line_fieldname]
-            out_row["function"] = get_function_name(line_num, function_dict)
-            ocsv.writerow(out_row)
+        with open(output_fpath, "w", newline="") as ofile:
+            ocsv = csv.DictWriter(ofile, fieldnames=icsv.fieldnames + ["function"])
+            ocsv.writeheader()
+            for row in icsv:
+                out_row = dict(row)
+                line_num = row[line_fieldname]
+                out_row["function"] = get_function_name(line_num, function_dict)
+                ocsv.writerow(out_row)
 
 
 def get_function_name(line_num, function_dict):
     for key, loc in function_dict.items():
-        if loc[0] <= line_num <= loc[1]:
+        if int(loc[0]) <= int(line_num) <= int(loc[1]):
             return key
     return "NONE"

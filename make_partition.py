@@ -1,5 +1,5 @@
 """
-An example script (TODO make a notebook instead.)
+An example script (TODO make a notebook too.)
 """
 
 import os
@@ -8,6 +8,9 @@ import subprocess
 from subprocess import DEVNULL
 from fluorite import ProjectHistory, GazeDataPartition
 from itrace_post import post_to_aoi
+
+# Specifies a branch of the MineSweeper code
+WHICH_BUG = "bug2"
 
 print("Partitioning data...")
 
@@ -21,8 +24,8 @@ time_offset = -1*3600*1000
 data_part = GazeDataPartition("eclipse_log.xml", time_offset)
 
 # Specify the length of a time segment and separate the data
-time_delta = 120000
-data_part.create_partition(time_delta)
+num_parts = 10
+time_delta = data_part.create_partition(num_parts=num_parts)
 
 # Save a corresponding file timeline
 phist.save_timeline("timeline", granularity=time_delta, first_time=data_part.first_time,
@@ -62,4 +65,16 @@ for sub_dir in dirs:
     fixations_db = glob.glob(itrace_prefix + "/rawgazes*.db3")[0]
 
     post_to_aoi(fixations_db, fixations_tsv, prefix+"/code_files",
-                prefix+"/post2aoi", 5.0, 0.01, func_dict="Foo")  # TODO download function dict
+                prefix+"/post2aoi", 5.0, 0.01, func_dict="comments_and_functions_"+WHICH_BUG+".json")
+
+    unwanted_files = glob.glob(prefix + "/post2aoi/*.java.csv")
+    unwanted_files.extend(glob.glob(prefix + "/post2aoi/*.java_AOI.csv"))
+    unwanted_files.extend(glob.glob(prefix + "/gaze2src/*"))
+    unwanted_files.extend(glob.glob(prefix + "/*.tar.gz"))
+    unwanted_files.extend(glob.glob(prefix + "/plugin_log.xml"))
+    unwanted_files.extend(glob.glob(prefix + "/src.xml"))
+
+    for file in unwanted_files:
+        os.remove(file)
+
+    os.rmdir(prefix + "/gaze2src")

@@ -7,6 +7,7 @@ the session.
 
 import datetime
 import pandas as pd
+import numpy as np
 import glob
 import os
 import xml.etree.ElementTree
@@ -61,8 +62,18 @@ class GazeDataPartition:
     If used in conjunction with a saved timeline, these time parameters
     should match those passed to save_timeline().
     """
-    def create_partition(self, period):
-        times = list(range(int(self.first_time), int(self.last_time), period))
+    def create_partition(self, period=None, num_parts=None):
+        if (period is not None and num_parts is not None) or \
+           (period is None and num_parts is None):
+            raise ValueError(
+                "Exactly one parameter ('period' or 'num_parts') should be specified"
+            )
+
+        if period is not None:
+            times = list(range(int(self.first_time), int(self.last_time), period))
+        else:
+            times = np.linspace(self.first_time, self.last_time, num_parts)
+            times = list(map(int, times))
 
         count = 0
         for i in range(len(times)-1):
@@ -80,6 +91,8 @@ class GazeDataPartition:
         ] = count
 
         self.partition_count = self.data["Partition"].max() + 1
+
+        return times[1] - times[0]
 
     """
     format="xml":
