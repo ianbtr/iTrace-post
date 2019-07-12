@@ -241,7 +241,8 @@ def append_function(data_filepath, line_fieldname, function_dict, output_fpath):
             for row in icsv:
                 out_row = dict(row)
                 line_num = row[line_fieldname]
-                out_row["function"] = get_function_name(line_num, function_dict)
+                func_name = get_function_name(line_num, function_dict)
+                out_row["function"] = func_name
                 ocsv.writerow(out_row)
 
 
