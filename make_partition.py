@@ -24,7 +24,7 @@ def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, out
     data_part = GazeDataPartition(eclipse_log, time_offset)
 
     # Specify the length of a time segment and separate the data
-    num_parts = 10
+    num_parts = 3
     time_delta = data_part.create_partition(num_parts=num_parts)
 
     # Save a corresponding file timeline
@@ -76,14 +76,14 @@ def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, out
 
         # os.rmdir(prefix + "/gaze2src")
 
-make_data_partition("Nick_functions_bug1.json", "Nick_bug1/fluorite_log.xml",
+make_data_partition("Nick_bug1.json", "Nick_bug1/fluorite_log.xml",
                     "Nick_bug1/eclipse_log.xml", "Nick_bug1/core_log.xml", "Nick_bug1_timeline")
 
-make_data_partition("Nick_functions_bug2.json", "Nick_bug2/fluorite_log.xml",
+make_data_partition("Nick_bug2.json", "Nick_bug2/fluorite_log.xml",
                     "Nick_bug2/eclipse_log.xml", "Nick_bug2/core_log.xml", "Nick_bug2_timeline")
 
-make_data_partition("comments_and_functions_bug1.json", "Maddie_bug1/fluorite_log.xml",
+make_data_partition("bug1_pretty.json", "Maddie_bug1/fluorite_log.xml",
                     "Maddie_bug1/eclipse_log.xml", "Maddie_bug1/core_log.xml", "Maddie_bug1_timeline")
 
-make_data_partition("comments_and_functions_bug2.json", "Maddie_bug2/fluorite_log.xml",
+make_data_partition("bug2_pretty.json", "Maddie_bug2/fluorite_log.xml",
                     "Maddie_bug2/eclipse_log.xml", "Maddie_bug2/core_log.xml", "Maddie_bug2_timeline")

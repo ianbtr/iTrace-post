@@ -72,7 +72,7 @@ class GazeDataPartition:
         if period is not None:
             times = list(range(int(self.first_time), int(self.last_time), period))
         else:
-            times = np.linspace(self.first_time, self.last_time, num_parts)
+            times = np.linspace(self.first_time, self.last_time, num_parts + 1)
             times = list(map(int, times))
 
         count = 0
@@ -85,10 +85,11 @@ class GazeDataPartition:
             ] = count
             count += 1
 
-        self.data.loc[
-            self.data["sys_time"] >= times[-1],
-            "Partition"
-        ] = count
+        if period is not None:
+            self.data.loc[
+                self.data["sys_time"] >= times[-1],
+                "Partition"
+            ] = count
 
         self.partition_count = self.data["Partition"].max() + 1
 
