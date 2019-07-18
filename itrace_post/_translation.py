@@ -6,6 +6,24 @@ import sqlite3
 import pandas
 from ._aoi import get_code_envelope, get_aoi_intersection
 
+"""
+Input: A list of CSVs with the same data fields
+Effect: Combine all data and sort by time
+"""
+def create_combined_archive(all_csvs, output_path):
+    archives = [pandas.read_csv(
+                    csv_file, parse_dates=["fix_time"], index_col=["fix_time"]
+                )
+                for csv_file in all_csvs]
+
+    archive = pandas.concat(archives, ignore_index=False)
+
+    archive = archive.sort_index()
+
+    archive = archive.drop(columns=["AOI"]) # Number is no longer relevant in combined data
+
+    archive.to_csv(output_path)
+
 
 def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold, func_dict=None):
     post_to_csv(db_fpath, tsv_fpath, outdir_name)

@@ -7,7 +7,7 @@ import glob
 import subprocess
 from subprocess import DEVNULL
 from fluorite import ProjectHistory, GazeDataPartition
-from itrace_post import post_to_aoi
+from itrace_post import post_to_aoi, create_combined_archive
 
 
 def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, output_dir):
@@ -24,7 +24,7 @@ def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, out
     data_part = GazeDataPartition(eclipse_log, time_offset)
 
     # Specify the length of a time segment and separate the data
-    num_parts = 3
+    num_parts = 10
     time_delta = data_part.create_partition(num_parts=num_parts)
 
     # Save a corresponding file timeline
@@ -58,7 +58,12 @@ def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, out
 
         # Run iTrace-post
         itrace_prefix = prefix + "/gaze2src"
-        fixations_tsv = glob.glob(itrace_prefix + "/fixations*.tsv")[0]
+
+        try:
+            fixations_tsv = glob.glob(itrace_prefix + "/fixations*.tsv")[0]
+        except IndexError:
+            continue
+
         fixations_db = glob.glob(itrace_prefix + "/rawgazes*.db3")[0]
 
         post_to_aoi(fixations_db, fixations_tsv, prefix+"/code_files",
@@ -76,14 +81,35 @@ def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, out
 
         # os.rmdir(prefix + "/gaze2src")
 
-make_data_partition("Nick_bug1.json", "Nick_bug1/fluorite_log.xml",
-                    "Nick_bug1/eclipse_log.xml", "Nick_bug1/core_log.xml", "Nick_bug1_timeline")
+    # Collect CSVs and create main archive
+    all_csvs = glob.glob(output_dir+"/*/post2aoi/*_functions.csv")
+    create_combined_archive(all_csvs, output_dir+"/merged_data.csv")
 
-make_data_partition("Nick_bug2.json", "Nick_bug2/fluorite_log.xml",
-                    "Nick_bug2/eclipse_log.xml", "Nick_bug2/core_log.xml", "Nick_bug2_timeline")
 
-make_data_partition("bug1_pretty.json", "Maddie_bug1/fluorite_log.xml",
-                    "Maddie_bug1/eclipse_log.xml", "Maddie_bug1/core_log.xml", "Maddie_bug1_timeline")
+#make_data_partition("Nick_bug1.json", "Nick_bug1/fluorite_log.xml",
+#                    "Nick_bug1/eclipse_log.xml", "Nick_bug1/core_log.xml", "Nick_bug1_timeline")
 
-make_data_partition("bug2_pretty.json", "Maddie_bug2/fluorite_log.xml",
-                    "Maddie_bug2/eclipse_log.xml", "Maddie_bug2/core_log.xml", "Maddie_bug2_timeline")
+#make_data_partition("Nick_bug2.json", "Nick_bug2/fluorite_log.xml",
+#                    "Nick_bug2/eclipse_log.xml", "Nick_bug2/core_log.xml", "Nick_bug2_timeline")
+
+
+normal_participants = ["P-101"]
+
+for participant in normal_participants:
+    raw_dir_1 = participant + "_bug1"
+
+    fluorite_log1, eclipse_log1, core_log1 = \
+        [glob.glob(raw_dir_1+"/"+matching_str)[0] for matching_str in
+         ["Log*xml", "eclipse*xml", "core*xml"]]
+
+    #make_data_partition("bug1_pretty.json", fluorite_log1, eclipse_log1, core_log1,
+    #                   participant+"_bug1_timeline")
+
+    raw_dir2 = participant + "_bug2"
+
+    fluorite_log2, eclipse_log2, core_log2 = \
+        [glob.glob(raw_dir2+"/"+matching_str)[0] for matching_str in
+         ["Log*xml", "eclipse*xml", "core*xml"]]
+
+    make_data_partition("bug2_pretty.json", fluorite_log2, eclipse_log2, core_log2,
+                        participant+"_bug2_timeline")
