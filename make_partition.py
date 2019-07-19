@@ -93,7 +93,7 @@ def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, out
 #                    "Nick_bug2/eclipse_log.xml", "Nick_bug2/core_log.xml", "Nick_bug2_timeline")
 
 
-normal_participants = ["P-101"]
+normal_participants = []
 
 for participant in normal_participants:
     raw_dir_1 = participant + "_bug1"
@@ -102,8 +102,8 @@ for participant in normal_participants:
         [glob.glob(raw_dir_1+"/"+matching_str)[0] for matching_str in
          ["Log*xml", "eclipse*xml", "core*xml"]]
 
-    #make_data_partition("bug1_pretty.json", fluorite_log1, eclipse_log1, core_log1,
-    #                   participant+"_bug1_timeline")
+    make_data_partition("bug1_pretty.json", fluorite_log1, eclipse_log1, core_log1,
+                       participant+"_bug1_timeline")
 
     raw_dir2 = participant + "_bug2"
 

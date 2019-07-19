@@ -1,5 +1,6 @@
 import os
 import csv
+from csv import QUOTE_NONE
 import json
 import glob
 import sqlite3
@@ -20,7 +21,7 @@ def create_combined_archive(all_csvs, output_path):
 
     archive = archive.sort_index()
 
-    archive = archive.drop(columns=["AOI"]) # Number is no longer relevant in combined data
+    # archive = archive.drop(columns=["AOI"]) # Number is no longer relevant in combined data
 
     archive.to_csv(output_path)
 
@@ -104,7 +105,7 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
 
     # Open tsv
     with open(tsv_fpath, "r", newline="") as infile:
-        itsv = csv.DictReader(infile, delimiter='\t')
+        itsv = csv.DictReader(infile, delimiter='\t', quoting=QUOTE_NONE)
 
         current_fname, current_file, ocsv = None, None, None
 
