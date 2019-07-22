@@ -1,5 +1,6 @@
 import os
 import csv
+import datetime
 from csv import QUOTE_NONE
 import json
 import glob
@@ -26,8 +27,9 @@ def create_combined_archive(all_csvs, output_path):
     archive.to_csv(output_path)
 
 
-def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold, func_dict=None):
-    post_to_csv(db_fpath, tsv_fpath, outdir_name)
+def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold,
+                func_dict=None, time_offset=0):
+    post_to_csv(db_fpath, tsv_fpath, outdir_name, time_offset)
 
     # Get names of generated files
     generated_files = glob.glob(outdir_name+"/*.csv")
@@ -75,7 +77,7 @@ USAGE: post_to_csv( <path to iTrace output database>,
 """
 
 
-def post_to_csv(db_fpath, tsv_fpath, outdir_name):
+def post_to_csv(db_fpath, tsv_fpath, outdir_name, offset_ms):
     # Declare output fieldnames
     output_fieldnames = [
         "fix_col",
@@ -102,6 +104,11 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
     open_files = dict()
     if not os.path.isdir(outdir_name):
         os.makedirs(outdir_name)
+
+    try:
+        epoch = datetime.datetime.fromtimestamp(0)
+    except OSError:
+        epoch = datetime.datetime.utcfromtimestamp(0)
 
     # Open tsv
     with open(tsv_fpath, "r", newline="") as infile:
@@ -157,7 +164,8 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name):
             ocsv.writerow({
                 "fix_col": nearest_col,
                 "fix_line": nearest_line,
-                "fix_time": tstamp,
+                "fix_time": (datetime.datetime.strptime(tstamp[:-6], "%Y-%m-%dT%H:%M:%S.%f") - epoch)
+            .total_seconds() * 1000 + offset_ms,
                 "fix_dur": input_row["DURATION"],
                 "pixel_x": pixel_x,
                 "pixel_y": pixel_y,
@@ -248,8 +256,6 @@ def append_aoi(data_filepath, x_fieldname, y_fieldname, aoi_filepath, output_fpa
 """
 Add a function columnn to the data, based on a file containing function locations.
 """
-
-
 def append_function(data_filepath, line_fieldname, function_dict, output_fpath):
     with open(data_filepath, "r") as infile:
         icsv = csv.DictReader(infile)

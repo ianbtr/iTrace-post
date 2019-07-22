@@ -67,7 +67,8 @@ def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, out
         fixations_db = glob.glob(itrace_prefix + "/rawgazes*.db3")[0]
 
         post_to_aoi(fixations_db, fixations_tsv, prefix+"/code_files",
-                    prefix+"/post2aoi", 5.0, 0.01, func_dict=function_index)
+                    prefix+"/post2aoi", 5.0, 0.01, func_dict=function_index,
+                    time_offset=time_offset)
 
         unwanted_files = glob.glob(prefix + "/post2aoi/*.java.csv")
         unwanted_files.extend(glob.glob(prefix + "/post2aoi/*.java_AOI.csv"))
