@@ -164,8 +164,8 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name, offset_ms):
             ocsv.writerow({
                 "fix_col": nearest_col,
                 "fix_line": nearest_line,
-                "fix_time": (datetime.datetime.strptime(tstamp[:-6], "%Y-%m-%dT%H:%M:%S.%f") - epoch)
-            .total_seconds() * 1000 + offset_ms,
+                "fix_time": int((datetime.datetime.strptime(tstamp[:-6], "%Y-%m-%dT%H:%M:%S.%f") - epoch)
+            .total_seconds() * 1000 + offset_ms),
                 "fix_dur": input_row["DURATION"],
                 "pixel_x": pixel_x,
                 "pixel_y": pixel_y,

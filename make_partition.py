@@ -27,9 +27,12 @@ def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, out
     num_parts = 10
     time_delta = data_part.create_partition(num_parts=num_parts)
 
+    timezone_offset = 5*1000*3600
+
     # Save a corresponding file timeline
-    phist.save_timeline(output_dir, granularity=time_delta, first_time=data_part.first_time,
-                        last_time=data_part.last_time)
+    phist.save_timeline(output_dir, granularity=time_delta,
+                        first_time=data_part.first_time + timezone_offset,
+                        last_time=data_part.last_time + timezone_offset)
 
     # Save partitioned data. This will save files to the timeline directories.
     data_part.save_partition(output_dir)
@@ -94,7 +97,7 @@ def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, out
 #                    "Nick_bug2/eclipse_log.xml", "Nick_bug2/core_log.xml", "Nick_bug2_timeline")
 
 
-normal_participants = []
+normal_participants = ["P205"]
 
 for participant in normal_participants:
     raw_dir_1 = participant + "_bug1"
