@@ -66,7 +66,7 @@ def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold
             with open(func_dict) as infile:
                 func_file = json.load(infile)[code_fname[:-5]]
 
-            append_function(
+            append_entity(
                 aoi_file, "fix_line", func_file, aoi_file[:-4]+"_functions.csv"
             )
 
@@ -256,7 +256,7 @@ def append_aoi(data_filepath, x_fieldname, y_fieldname, aoi_filepath, output_fpa
 """
 Add a function columnn to the data, based on a file containing function locations.
 """
-def append_function(data_filepath, line_fieldname, function_dict, output_fpath):
+def append_entity(data_filepath, line_fieldname, function_dict, output_fpath):
     with open(data_filepath, "r") as infile:
         icsv = csv.DictReader(infile)
 
@@ -266,13 +266,14 @@ def append_function(data_filepath, line_fieldname, function_dict, output_fpath):
             for row in icsv:
                 out_row = dict(row)
                 line_num = row[line_fieldname]
-                func_name = get_function_name(line_num, function_dict)
-                out_row["function"] = func_name
+                entity_type = get_entity_type(line_num, function_dict)
+                out_row["entity"] = entity_type
                 ocsv.writerow(out_row)
 
 
-def get_function_name(line_num, function_dict):
-    for key, loc in function_dict.items():
-        if int(loc[0]) <= int(line_num) <= int(loc[1]):
-            return key
+def get_entity_type(line_num, function_dict):
+    for key, locs in function_dict.items():
+        for loc in locs:
+            if int(loc[0]) <= int(line_num) <= int(loc[1]):
+                return key
     return "NONE"

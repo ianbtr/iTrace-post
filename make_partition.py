@@ -103,7 +103,7 @@ def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, out
 #                    "raw_data/Nick_bug2/eclipse_log.xml", "raw_data/Nick_bug2/core_log.xml",
 #                    "raw_data/Nick_bug2_timeline")
 
-normal_participants = ["P105", "P201", "P202", "P204", "P205"]
+normal_participants = []
 
 for participant in normal_participants:
     raw_dir_1 = 'raw_data/' + participant + "_bug1"
@@ -123,3 +123,4 @@ for participant in normal_participants:
 
     make_data_partition("bug2_pretty.json", fluorite_log2, eclipse_log2, core_log2,
                         "processed_data/"+participant+"_bug2_timeline")
+
