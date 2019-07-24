@@ -310,7 +310,11 @@ class ProjectHistory:
                     )
 
                 elif child.attrib['_type'] == "Replace":
-                    rw = child[1].text.replace("\n", self.line_separator)
+                    rw = child[1].text
+                    if rw != None:
+                        rw = rw.replace("\n", self.line_separator)
+                    else:
+                        rw = ""
                     change = ReplaceEvent(
                         token_start=int(child.attrib['offset']),
                         start_time=self.launch_time + int(child.attrib['timestamp']),
