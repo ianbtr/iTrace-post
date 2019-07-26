@@ -28,7 +28,8 @@ def create_combined_archive(all_csvs, output_path):
 
 
 def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold,
-                func_dict=None, time_offset=0):
+                func_dict=None, time_offset=0, compute_aois=False):
+
     post_to_csv(db_fpath, tsv_fpath, outdir_name, time_offset)
 
     # Get names of generated files
@@ -38,36 +39,40 @@ def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold
         code_fname = generated_file[:-4].split("\\")[-1]
         code_fpath = code_dir+"/"+code_fname
 
-        width, height = get_code_envelope(code_fpath)
+        if compute_aois:
+            width, height = get_code_envelope(code_fpath)
 
-        # Generate AOI
-        mask, labels, rectangles = \
-            get_aoi_intersection(
-                width, height, code_fpath, generated_file,
-                x_fieldname="fix_col", y_fieldname="fix_line",
-                dur_fieldname="fix_dur", smoothing=smoothing,
-                threshold=threshold
+            # Generate AOI
+            mask, labels, rectangles = \
+                get_aoi_intersection(
+                    width, height, code_fpath, generated_file,
+                    x_fieldname="fix_col", y_fieldname="fix_line",
+                    dur_fieldname="fix_dur", smoothing=smoothing,
+                    threshold=threshold
+                )
+
+            json_file = generated_file[:-4] + "_AOI.json"
+            with open(json_file, "w") as ofile:
+                ofile.write(
+                    json.dumps(rectangles)
+                )
+
+            append_aoi(
+                generated_file, "fix_col", "fix_line",
+                json_file, generated_file[:-4]+"_AOI.csv"
             )
-
-        json_file = generated_file[:-4] + "_AOI.json"
-        with open(json_file, "w") as ofile:
-            ofile.write(
-                json.dumps(rectangles)
-            )
-
-        append_aoi(
-            generated_file, "fix_col", "fix_line",
-            json_file, generated_file[:-4]+"_AOI.csv"
-        )
 
         if func_dict is not None:
-            aoi_file = generated_file[:-4]+"_AOI.csv"
+            if compute_aois:
+                target_file = generated_file[:-4]+"_AOI.csv"
+            else:
+                target_file = generated_file
 
             with open(func_dict) as infile:
                 func_file = json.load(infile)[code_fname[:-5]]
 
             append_entity(
-                aoi_file, "fix_line", func_file, aoi_file[:-4]+"_functions.csv"
+                target_file, "fix_line", func_file, generated_file[:-4]+"_functions.csv"
             )
 
 
@@ -261,7 +266,7 @@ def append_entity(data_filepath, line_fieldname, function_dict, output_fpath):
         icsv = csv.DictReader(infile)
 
         with open(output_fpath, "w", newline="") as ofile:
-            ocsv = csv.DictWriter(ofile, fieldnames=icsv.fieldnames + ["function"])
+            ocsv = csv.DictWriter(ofile, fieldnames=icsv.fieldnames + ["entity"])
             ocsv.writeheader()
             for row in icsv:
                 out_row = dict(row)
@@ -272,8 +277,8 @@ def append_entity(data_filepath, line_fieldname, function_dict, output_fpath):
 
 
 def get_entity_type(line_num, function_dict):
-    for key, locs in function_dict.items():
-        for loc in locs:
-            if int(loc[0]) <= int(line_num) <= int(loc[1]):
+    for key, loc in function_dict.items():
+        for loc2 in loc.values():
+            if int(loc2[0]) <= int(line_num) <= int(loc2[1]):
                 return key
     return "NONE"

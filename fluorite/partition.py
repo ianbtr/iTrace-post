@@ -59,21 +59,40 @@ class GazeDataPartition:
         self.last_time = self.data["sys_time"].iloc[-1]
 
     """
-    If used in conjunction with a saved timeline, these time parameters
-    should match those passed to save_timeline().
+    Similar to the normal behavior as create_partition, but with custom time steps
     """
-    def create_partition(self, period=None, num_parts=None):
-        if (period is not None and num_parts is not None) or \
-           (period is None and num_parts is None):
+    def _create_custom_partition(self, time_periods):
+        count = 0
+        for time_1, time_2 in time_periods:
+            region = (self.data["sys_time"] >= time_1) & (self.data["sys_time"] < time_2)
+
+            if not any(list(region)):
+                continue
+
+            self.data.loc[region, "Partition"] = int(count)
+            count += 1
+
+        self.partition_count = int(self.data["Partition"].dropna().max())
+
+    """
+    If used in conjunction with a saved timeline, these time parameters
+    should align with the timeline.
+    """
+    def create_partition(self, period=None, num_parts=None, time_periods=None):
+        if not sum(map(bool, [period, num_parts, time_periods])) == 1:
             raise ValueError(
-                "Exactly one parameter ('period' or 'num_parts') should be specified"
+                "Exactly one parameter ('period' or 'num_parts' or 'time_periods') should be specified"
             )
 
-        if period is not None:
-            times = list(range(int(self.first_time), int(self.last_time), period))
+        if time_periods is not None:
+            self._create_custom_partition(time_periods)
+            return
         else:
-            times = np.linspace(self.first_time, self.last_time, num_parts + 1)
-            times = list(map(int, times))
+            if period is not None:
+                times = list(range(int(self.first_time), int(self.last_time), period))
+            else:
+                times = np.linspace(self.first_time, self.last_time, num_parts + 1)
+                times = list(map(int, times))
 
         count = 0
         for i in range(len(times)-1):

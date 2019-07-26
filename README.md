@@ -1,15 +1,39 @@
 # iTrace-post
-A module (and a bonus script) for processing output from the [iTrace plugin](www.i-trace.org).
+A pair of modules and sample script for processing output from the [iTrace plugin](www.i-trace.org),
+particularly when used in tandem with the [FLUORITE plugin](http://www.cs.cmu.edu/~fluorite/).
 Also performs automatic generation of Areas of Interest (AOI's) based on fixation data and
-code location.
+code location. The program is capable of processing data from experiments where the participants
+were permitted to edit the code they were presented with; however, this process is 
+INCREDIBLY slow, and it is expected that a future version of iTrace will provide support
+for this kind of experiment.
 
 ## Quick Start
-Run `setup.py` like this:  
+Run `setup.py` like this:
 ```$ python setup.py install```  
-As soon as this completes, you're ready to import the `itrace_post` module into 
-your project. Please note that you will need to copy the script `post2aoi.py` if 
-you wish to use it in your project. You may also wish to use this script as an 
-example when writing a similar script to read output from iTrace.
+As soon as this completes, you're ready to import the `itrace_post` and `fluorite` 
+modules into your project. Please note that you will need to copy the script 
+`make_partition.py` if you wish to use it in your project. It may be helpful use this 
+script as an example when writing a similar script to read output from iTrace.
+
+## Requirements
+You must have the following programs installed and on your path:
+* `gaze2src`
+* `srcml`
+
+The following modules are also required:
+* `numpy`
+* `pandas`
+* `scipy`
+
+## Using `make_partition.py`
+Please note that this script is written for experiments where there is a 
+record from the [FLUORITE plugin](http://www.cs.cmu.edu/~fluorite/).
+Given the parameters for the `gaze2src` program and a
+list of directories containing raw data from iTrace and FLUORITE, this script 
+separates your data such that each partition's data comes from a period during which the participant did not change the set 
+of code documents. With the log from FLUORITE, the state of each project file during this period
+is deduced. Once the data has been divided, the script runs `srcml` and `gaze2src` on each 
+partition and then combines the data into a single file.
 
 ## Translation of iTrace Files
 The `gaze2src` program is a part of the iTrace program suite that performs post-processing 
@@ -40,5 +64,5 @@ using Gaussian smoothing, and then a threshold is applied to reveal regions that
 majority of subjects' gazes. This procedure is inspired by the masking algorithm in the
 [iMap](https://github.com/iBMLab/iMap4) project.
 
-## Where This Project Fits With Everything Else
+## General Program Control Flow
 ![alt text](img/chart.png)

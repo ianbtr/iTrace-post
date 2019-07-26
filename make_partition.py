@@ -1,5 +1,5 @@
 """
-An example script (TODO make a notebook too.)
+An example script
 """
 
 import os
@@ -15,7 +15,7 @@ Parameters for gaze2src:
 FILTER = "ivt"
 FILTER_ARGS = ["-v 30", "-u 60"]
 
-def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, output_dir):
+def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, output_dir, compute_aois=False):
 
     print("Partitioning data...")
 
@@ -23,21 +23,18 @@ def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, out
     phist = ProjectHistory(fluorite_log)
 
     # In our timezone at least, the time iTrace records is one hour behind that of Fluorite.
-    time_offset = -1*3600*1000
+    time_offset = 4*3600*1000
 
     # Create a DataPartition to split the plugin log file
     data_part = GazeDataPartition(eclipse_log, time_offset)
 
-    # Specify the length of a time segment and separate the data
-    num_parts = 10
-    time_delta = data_part.create_partition(num_parts=num_parts)
-
-    timezone_offset = 5*1000*3600
-
     # Save a corresponding file timeline
-    phist.save_timeline(output_dir, granularity=time_delta,
-                        first_time=data_part.first_time + timezone_offset,
-                        last_time=data_part.last_time + timezone_offset)
+    time_periods = phist.save_timeline(output_dir, granularity='finest',
+                        first_time=data_part.first_time,
+                        last_time=data_part.last_time)
+
+    # Separate the data
+    data_part.create_partition(time_periods=time_periods)
 
     # Save partitioned data. This will save files to the timeline directories.
     data_part.save_partition(output_dir)
@@ -76,7 +73,7 @@ def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, out
 
         post_to_aoi(fixations_db, fixations_tsv, prefix+"/code_files",
                     prefix+"/post2aoi", 5.0, 0.01, func_dict=function_index,
-                    time_offset=time_offset)
+                    time_offset=time_offset, compute_aois=compute_aois)
 
         unwanted_files = glob.glob(prefix + "/post2aoi/*.java.csv")
         unwanted_files.extend(glob.glob(prefix + "/post2aoi/*.java_AOI.csv"))
@@ -95,25 +92,18 @@ def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, out
     create_combined_archive(all_csvs, output_dir+"/merged_data.csv")
 
 
-#make_data_partition("Nick_bug1.json", "raw_data/Nick_bug1/fluorite_log.xml",
-#                    "raw_data/Nick_bug1/eclipse_log.xml", "raw_data/Nick_bug1/core_log.xml",
-#                    "raw_data/Nick_bug1_timeline")
 
-#make_data_partition("Nick_bug2.json", "raw_data/Nick_bug2/fluorite_log.xml",
-#                    "raw_data/Nick_bug2/eclipse_log.xml", "raw_data/Nick_bug2/core_log.xml",
-#                    "raw_data/Nick_bug2_timeline")
-
-normal_participants = []
+normal_participants = ["P104", "P105", "P201", "P202", "P203", "P204", "P205", "P206", "P207", "P208", "P301"]
 
 for participant in normal_participants:
     raw_dir_1 = 'raw_data/' + participant + "_bug1"
 
-    fluorite_log1, eclipse_log1, core_log1 = \
-        [glob.glob(raw_dir_1+"/"+matching_str)[0] for matching_str in
-         ["Log*xml", "eclipse*xml", "core*xml"]]
+    #fluorite_log1, eclipse_log1, core_log1 = \
+    #    [glob.glob(raw_dir_1+"/"+matching_str)[0] for matching_str in
+    #     ["Log*xml", "eclipse*xml", "core*xml"]]
 
-    make_data_partition("bug1_pretty.json", fluorite_log1, eclipse_log1, core_log1,
-                       "processed_data/"+participant+"_bug1_timeline")
+    #make_data_partition("bug1.json", fluorite_log1, eclipse_log1, core_log1,
+    #                   "processed_data/"+participant+"_bug1_timeline", compute_aois=True)
 
     raw_dir2 = 'raw_data/' + participant + "_bug2"
 
@@ -121,6 +111,5 @@ for participant in normal_participants:
         [glob.glob(raw_dir2+"/"+matching_str)[0] for matching_str in
          ["Log*xml", "eclipse*xml", "core*xml"]]
 
-    make_data_partition("bug2_pretty.json", fluorite_log2, eclipse_log2, core_log2,
-                        "processed_data/"+participant+"_bug2_timeline")
-
+    make_data_partition("bug2.json", fluorite_log2, eclipse_log2, core_log2,
+                        "processed_data/"+participant+"_bug2_timeline", compute_aois=True)

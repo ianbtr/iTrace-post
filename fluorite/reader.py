@@ -372,7 +372,12 @@ class ProjectHistory:
             os.makedirs(directory_path)
 
         if granularity is "finest":
-            self._save_full_timeline(directory_path)
+            if first_time is None or last_time is None:
+                raise ValueError(
+                    "Both first_time and last_time must be specified for the given option "
+                    "granularity='finest'"
+                )
+            return self._save_full_timeline(directory_path, int(first_time), int(last_time))
 
         elif type(granularity) is int:
             self._save_periodic_timeline(directory_path, granularity,
@@ -408,16 +413,21 @@ class ProjectHistory:
     """
     Save timeline at finest granularity
     """
-    def _save_full_timeline(self, directory_path):
+    def _save_full_timeline(self, directory_path, first_time, last_time):
         # Get global change list
         all_changes = self.get_all_changes()
 
-        count = 0
-
-        # Save initial change
-        self.save_snapshots(str(count)+"_0", all_changes[0].time_1, 0, directory_path)
-
         count = 1
+
+        periods = list()
+
+        if len(all_changes) > 0:
+            # Save initial change
+            self.save_snapshots("0_" + str(first_time), all_changes[0].time_1, 0, directory_path)
+            periods.append([first_time, all_changes[0].time_1])
+        else:
+            self.save_snapshots("0_"+str(first_time), "inf", 0, directory_path)
+            return [[first_time, last_time]]
 
         # Loop through consecutive pairs of changes
         for i in range(len(all_changes)-1):
@@ -433,6 +443,8 @@ class ProjectHistory:
             self.save_snapshots(str(count) + "_" + str(snapshot_start),
                                 snapshot_end, snapshot_start+1, directory_path)
 
+            periods.append([snapshot_start, snapshot_end])
+
             count += 1
 
         # Save final state
@@ -442,7 +454,11 @@ class ProjectHistory:
             final_time = all_changes[-1].time_1
 
         self.save_snapshots(str(count) + "_" + str(final_time),
-                            "inf", final_time+1, directory_path)
+                            last_time, final_time+1, directory_path)
+
+        periods.append([final_time, last_time])
+
+        return periods
 
 
 """
