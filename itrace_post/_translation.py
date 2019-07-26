@@ -28,7 +28,7 @@ def create_combined_archive(all_csvs, output_path):
 
 
 def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold,
-                func_dict=None, time_offset=0, compute_aois=False):
+                func_dict=None, entity_dict=None, time_offset=0, compute_aois=False):
 
     post_to_csv(db_fpath, tsv_fpath, outdir_name, time_offset)
 
@@ -71,8 +71,11 @@ def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold
             with open(func_dict) as infile:
                 func_file = json.load(infile)[code_fname[:-5]]
 
+            with open(entity_dict) as infile:
+                entity_file = json.load(infile)[code_fname[:-5]]
+
             append_entity(
-                target_file, "fix_line", func_file, generated_file[:-4]+"_functions.csv"
+                target_file, "fix_line", func_file, entity_file, generated_file[:-4]+"_functions.csv"
             )
 
 
@@ -261,23 +264,30 @@ def append_aoi(data_filepath, x_fieldname, y_fieldname, aoi_filepath, output_fpa
 """
 Add a function columnn to the data, based on a file containing function locations.
 """
-def append_entity(data_filepath, line_fieldname, function_dict, output_fpath):
+def append_entity(data_filepath, line_fieldname, function_dict, entity_dict, output_fpath):
     with open(data_filepath, "r") as infile:
         icsv = csv.DictReader(infile)
 
         with open(output_fpath, "w", newline="") as ofile:
-            ocsv = csv.DictWriter(ofile, fieldnames=icsv.fieldnames + ["entity"])
+            ocsv = csv.DictWriter(ofile, fieldnames=icsv.fieldnames + ["function", "entity"])
             ocsv.writeheader()
             for row in icsv:
                 out_row = dict(row)
                 line_num = row[line_fieldname]
-                entity_type = get_entity_type(line_num, function_dict)
+                entity_type = get_entity_type(line_num, entity_dict)
+                function_name = get_function(line_num, function_dict)
                 out_row["entity"] = entity_type
+                out_row["function"] = function_name
                 ocsv.writerow(out_row)
 
-
-def get_entity_type(line_num, function_dict):
+def get_function(line_num, function_dict):
     for key, loc in function_dict.items():
+        if int(loc[0]) <= int(line_num) <= int(loc[1]):
+            return key
+    return "NONE"
+
+def get_entity_type(line_num, entity_dict):
+    for key, loc in entity_dict.items():
         for loc2 in loc.values():
             if int(loc2[0]) <= int(line_num) <= int(loc2[1]):
                 return key

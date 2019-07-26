@@ -173,64 +173,6 @@ def generate_code_mask(code_fpath, num_cols, num_lines):
 
 
 """
-This code is for generating AOI's resolved to the pixel.
-It is not currently in use.
-
-def generate_code_aois(x_res, y_res, *args):
-    data_fpath = args[0]
-    font_size_x = int(args[1])
-    font_size_y = int(args[2])
-    font_spacing = int(args[3])
-    x_offset = float(args[4])
-    y_offset = float(args[5])
-
-    # Validate AOI type
-    aoi_type = args[6]
-    if aoi_type != "line" and aoi_type != "token":
-        print("ERROR: aoi_type argument must be either 'line' or 'token'")
-        exit(1)
-
-    # Load code from file
-    with open(data_fpath, "r") as infile:
-        code = infile.read()
-
-    # Replace all tabs with 4 spaces
-    code = code.replace("\t", " " * 4)
-
-    # Generate AOI's
-    aois = itrace_post.code_to_aois(code, filename=data_fpath, font_size=(font_size_x, font_size_y),
-                            line_offset=font_spacing)
-
-    # Add offset to all entries
-    for row_num in range(aois.shape[0]):
-        aois.at[row_num, 'x'] += x_offset
-        aois.at[row_num, 'y'] += y_offset
-
-    # Categorize AOI's
-    sub_aois = aois[aois.kind == "line"] if aoi_type == "line" \
-        else aois[aois.kind == "token"]
-
-    rects = list()
-    for index, row in sub_aois.iterrows():
-        rects.append(
-            Rect(
-                row['x'], row['x'] + row['width'],
-                row['y'], row['y'] + row['height']
-            )
-        )
-
-    # Create logical array
-    regions = numpy.zeros((y_res, x_res))
-    for rect in rects:
-        if rect.top < 0: rect.top = 0
-        if rect.left < 0: rect.left = 0
-        regions[rect.top : rect.bottom + 1, rect.left : rect.right + 1] = 1
-
-    return regions
-"""
-
-
-"""
 INPUT: data_file: A CSV-style file containing x, y and duration fields for fixations on the given stimulus.
        x_fieldname: The field name in the data file corresponding to the x-position of gazes.
        y_fieldname: The field name in the data file corresponding to the y-positions of gazes.

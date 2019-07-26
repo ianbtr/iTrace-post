@@ -15,7 +15,8 @@ Parameters for gaze2src:
 FILTER = "ivt"
 FILTER_ARGS = ["-v 30", "-u 60"]
 
-def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, output_dir, compute_aois=False):
+def make_data_partition(function_index, entity_index, fluorite_log,
+                        eclipse_log, core_log, output_dir, compute_aois=False):
 
     print("Partitioning data...")
 
@@ -73,7 +74,7 @@ def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, out
 
         post_to_aoi(fixations_db, fixations_tsv, prefix+"/code_files",
                     prefix+"/post2aoi", 5.0, 0.01, func_dict=function_index,
-                    time_offset=time_offset, compute_aois=compute_aois)
+                    entity_dict=entity_index, time_offset=time_offset, compute_aois=compute_aois)
 
         unwanted_files = glob.glob(prefix + "/post2aoi/*.java.csv")
         unwanted_files.extend(glob.glob(prefix + "/post2aoi/*.java_AOI.csv"))
@@ -93,17 +94,18 @@ def make_data_partition(function_index, fluorite_log, eclipse_log, core_log, out
 
 
 
-normal_participants = ["P104", "P105", "P201", "P202", "P203", "P204", "P205", "P206", "P207", "P208", "P301"]
+normal_participants = ["Maddie", "P102", "P103", "P105", "P201", "P202", "P203",
+                       "P204", "P205", "P206", "P207", "P208", "P301"]
 
 for participant in normal_participants:
     raw_dir_1 = 'raw_data/' + participant + "_bug1"
 
-    #fluorite_log1, eclipse_log1, core_log1 = \
-    #    [glob.glob(raw_dir_1+"/"+matching_str)[0] for matching_str in
-    #     ["Log*xml", "eclipse*xml", "core*xml"]]
+    fluorite_log1, eclipse_log1, core_log1 = \
+        [glob.glob(raw_dir_1+"/"+matching_str)[0] for matching_str in
+         ["Log*xml", "eclipse*xml", "core*xml"]]
 
-    #make_data_partition("bug1.json", fluorite_log1, eclipse_log1, core_log1,
-    #                   "processed_data/"+participant+"_bug1_timeline", compute_aois=True)
+    make_data_partition("bug1_functions.json", "bug1_entities.json", fluorite_log1, eclipse_log1, core_log1,
+                       "processed_data/"+participant+"_bug1_timeline", compute_aois=True)
 
     raw_dir2 = 'raw_data/' + participant + "_bug2"
 
@@ -111,5 +113,5 @@ for participant in normal_participants:
         [glob.glob(raw_dir2+"/"+matching_str)[0] for matching_str in
          ["Log*xml", "eclipse*xml", "core*xml"]]
 
-    make_data_partition("bug2.json", fluorite_log2, eclipse_log2, core_log2,
+    make_data_partition("bug2_functions.json", "bug2_entities.json", fluorite_log2, eclipse_log2, core_log2,
                         "processed_data/"+participant+"_bug2_timeline", compute_aois=True)
