@@ -72,7 +72,7 @@ class GazeDataPartition:
             self.data.loc[region, "Partition"] = int(count)
             count += 1
 
-        self.partition_count = int(self.data["Partition"].dropna().max())
+        self.partition_count = int(self.data["Partition"].dropna().max()) + 1
 
     """
     If used in conjunction with a saved timeline, these time parameters

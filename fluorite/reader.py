@@ -102,8 +102,9 @@ intial_content = the original contents of that file
 
 class FileHistory:
     def __init__(self, filename, initial_content,
-                 initial_functions=None):
+                 initial_functions=None, initial_entities=None):
         self.initial_functions = initial_functions
+        self.initial_entities = initial_entities
         self.filename = str(filename)
         self.initial_content = initial_content
         self.changes = list()
@@ -116,6 +117,7 @@ class FileHistory:
     def get_snapshot(self, timestamp):
         content = self.initial_content
         functions = copy.deepcopy(self.initial_functions)
+        entities = copy.deepcopy(self.initial_entities)
         for change in self.changes:
             if timestamp < change.time_1:
                 break
@@ -129,6 +131,7 @@ class FileHistory:
                     prior_string = content[:change.token_start]
                     line_num_start = prior_string.count("\n")
                     functions = update_functions(functions, line_num_start, lines_added)
+                    entities = update_entities(entities, line_num_start, lines_added)
 
             elif type(change) is DeletionEvent:
                 content = content[:change.token_start] + \
@@ -139,6 +142,7 @@ class FileHistory:
                     prior_string = content[:change.token_start]
                     line_num_start = prior_string.count("\n")
                     functions = update_functions(functions, line_num_start, -1 * lines_removed)
+                    entities = update_entities(entities, line_num_start, -1 * lines_removed)
 
             elif type(change) is ReplaceEvent:
                 string_removed = content[change.token_start: change.token_end + 1]
@@ -152,11 +156,12 @@ class FileHistory:
                     prior_string = content[:change.token_start]
                     line_num_start = prior_string.count("\n")
                     functions = update_functions(functions, line_num_start, net_lines_added)
+                    entities = update_entities(entities, line_num_start, net_lines_added)
 
             else:
                 raise AssertionError("Bad type in change list: "+str(type(change)))
 
-        return content, functions
+        return content, functions, entities
 
     """
     Update the object by passing an XML element representing
@@ -186,12 +191,16 @@ func_location_file = path to a JSON file describing the INITIAL
 
 
 class ProjectHistory:
-    def __init__(self, logfile, func_location_file=None):
+    def __init__(self, logfile, func_location_file=None, entity_location_file=None):
         self.logfile = logfile
 
         if func_location_file is not None:
             with open(func_location_file) as infile:
                 self.initial_functions = json.load(infile)
+
+        if entity_location_file is not None:
+            with open(entity_location_file) as infile:
+                self.initial_entities = json.load(infile)
 
         self.project_files = dict()
 
@@ -271,7 +280,8 @@ class ProjectHistory:
                     try:
                         self.project_files[short_name] = \
                             FileHistory(short_name, snapshot_text,
-                                        initial_functions=self.initial_functions[short_name])
+                                        initial_functions=self.initial_functions[short_name[:-5]],
+                                        initial_entities=self.initial_entities[short_name[:-5]])
                     except AttributeError:
                         self.project_files[short_name] = \
                             FileHistory(short_name, snapshot_text,)
@@ -347,16 +357,29 @@ class ProjectHistory:
         if not os.path.exists(target_dir):
             os.makedirs(target_dir)
 
+        all_functions, all_entities = dict(), dict()
+
         for filehist in self.project_files.values():
             short_filename = trim_filename(filehist.filename)
-            snapshot, functions = filehist.get_snapshot(target_time)
+            snapshot, functions, entities = filehist.get_snapshot(target_time)
             snapshot = snapshot.replace(self.line_separator, "\n")
+
             with open(target_dir + "/" + short_filename, "w") as ofile:
                 ofile.write(snapshot)
 
             if functions is not None:
-                with open(target_dir + "/functions.json", "w") as ofile:
-                    json.dump(functions, ofile)
+                all_functions[short_filename[:-5]] = copy.deepcopy(functions)
+
+            if entities is not None:
+                all_entities[short_filename[:-5]] = copy.deepcopy(entities)
+
+        if self.initial_functions is not None:
+            with open(target_dir + "/functions.json", "w") as ofile:
+                json.dump(all_functions, ofile)
+
+        if self.initial_entities is not None:
+            with open(target_dir + "/entities.json", "w") as ofile:
+                json.dump(all_entities, ofile)
 
     """
     Save a file timeline. Granularity is finest by default, meaning
@@ -475,6 +498,16 @@ def update_functions(functions, first_line, net_added):
 
     return functions
 
+
+def update_entities(entities, first_line, net_added):
+    for key, val in entities.items():
+        for name, line_range in val.items():
+            if line_range[0] > first_line:
+                line_range[0] += net_added
+            if line_range[1] >= first_line:
+                line_range[1] += net_added
+
+    return entities
 
 """
 Gets the last bit of a filename

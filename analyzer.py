@@ -21,7 +21,8 @@ def make_data_partition(function_index, entity_index, fluorite_log,
     print("Partitioning data...")
 
     # Create a ProjectHistory object from a Fluorite log file
-    phist = ProjectHistory(fluorite_log)
+    phist = ProjectHistory(fluorite_log, func_location_file=function_index,
+                           entity_location_file=entity_index)
 
     # In our timezone at least, the time iTrace records is one hour behind that of Fluorite.
     time_offset = 4*3600*1000
@@ -49,6 +50,9 @@ def make_data_partition(function_index, entity_index, fluorite_log,
         print("\t"+sub_dir)
         prefix = output_dir+"/"+sub_dir
 
+        if not os.path.exists(prefix+"/plugin_log.xml"):
+            continue
+
         # Create a tarball of code files
         subprocess.run(["tar", "-czf", prefix+"/src.tar.gz", prefix+"/code_files"],
                        stdout=DEVNULL, stderr=DEVNULL)
@@ -72,15 +76,18 @@ def make_data_partition(function_index, entity_index, fluorite_log,
 
         fixations_db = glob.glob(itrace_prefix + "/rawgazes*.db3")[0]
 
+        function_archive = prefix+"/code_files/functions.json"
+        entity_archive = prefix+"/code_files/entities.json"
+
         post_to_aoi(fixations_db, fixations_tsv, prefix+"/code_files",
-                    prefix+"/post2aoi", 5.0, 0.01, func_dict=function_index,
-                    entity_dict=entity_index, time_offset=time_offset, compute_aois=compute_aois)
+                    prefix+"/post2aoi", 5.0, 0.01, func_dict=function_archive,
+                    entity_dict=entity_archive, time_offset=time_offset, compute_aois=compute_aois)
 
         unwanted_files = glob.glob(prefix + "/post2aoi/*.java.csv")
         unwanted_files.extend(glob.glob(prefix + "/post2aoi/*.java_AOI.csv"))
         # unwanted_files.extend(glob.glob(prefix + "/gaze2src/*"))
         unwanted_files.extend(glob.glob(prefix + "/*.tar.gz"))
-        unwanted_files.extend(glob.glob(prefix + "/plugin_log.xml"))
+        #unwanted_files.extend(glob.glob(prefix + "/plugin_log.xml"))
         unwanted_files.extend(glob.glob(prefix + "/src.xml"))
 
         for file in unwanted_files:
@@ -94,8 +101,7 @@ def make_data_partition(function_index, entity_index, fluorite_log,
 
 
 
-normal_participants = ["Maddie", "P102", "P103", "P105", "P201", "P202", "P203",
-                       "P204", "P205", "P206", "P207", "P208", "P301"]
+normal_participants = []
 
 for participant in normal_participants:
     raw_dir_1 = 'raw_data/' + participant + "_bug1"
