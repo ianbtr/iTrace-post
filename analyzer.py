@@ -101,23 +101,23 @@ def make_data_partition(function_index, entity_index, fluorite_log,
 
 
 
-normal_participants = []
+normal_participants = ["P-107", "P-402"]
 
 for participant in normal_participants:
-    raw_dir_1 = 'raw_data/' + participant + "_bug1"
+    raw_dir_1 = 'raw_data/' + participant + "/" + participant + "-bug1"
 
     fluorite_log1, eclipse_log1, core_log1 = \
         [glob.glob(raw_dir_1+"/"+matching_str)[0] for matching_str in
-         ["Log*xml", "eclipse*xml", "core*xml"]]
+         ["Log*xml", "*/eclipse*xml", "*/core*xml"]]
 
     make_data_partition("bug1_functions.json", "bug1_entities.json", fluorite_log1, eclipse_log1, core_log1,
                        "processed_data/"+participant+"_bug1_timeline", compute_aois=True)
 
-    raw_dir2 = 'raw_data/' + participant + "_bug2"
+    raw_dir2 = 'raw_data/' + participant + "/" + participant + "-bug2"
 
     fluorite_log2, eclipse_log2, core_log2 = \
         [glob.glob(raw_dir2+"/"+matching_str)[0] for matching_str in
-         ["Log*xml", "eclipse*xml", "core*xml"]]
+         ["Log*xml", "*/eclipse*xml", "*/core*xml"]]
 
     make_data_partition("bug2_functions.json", "bug2_entities.json", fluorite_log2, eclipse_log2, core_log2,
                         "processed_data/"+participant+"_bug2_timeline", compute_aois=True)

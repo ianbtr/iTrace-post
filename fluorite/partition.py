@@ -16,6 +16,14 @@ import xml.etree.ElementTree
 A partitioner for gaze data.
 """
 
+try:
+    EPOCH = datetime.datetime.fromtimestamp(0)
+except OSError:
+    EPOCH = datetime.datetime.utcfromtimestamp(0)
+
+def date_to_epoch(date_str):
+    return (datetime.datetime.strptime(date_str[:-6], "%Y-%m-%dT%H:%M:%S.%f") - EPOCH) \
+            .total_seconds() * 1000
 
 class GazeDataPartition:
     def __init__(self, data_filename, offset_ms):
@@ -44,14 +52,8 @@ class GazeDataPartition:
         self.data = pd.DataFrame.from_dict(df_dict)
 
         # Create epoch time column
-        try:
-            epoch = datetime.datetime.fromtimestamp(0)
-        except OSError:
-            epoch = datetime.datetime.utcfromtimestamp(0)
-
         self.data["sys_time"] = list(map(
-            lambda dt_str: (datetime.datetime.strptime(dt_str[:-6], "%Y-%m-%dT%H:%M:%S.%f") - epoch)
-            .total_seconds() * 1000 + offset_ms,
+            lambda dt_str: date_to_epoch(dt_str) + offset_ms,
             self.data["fix_time"]
         ))
 
