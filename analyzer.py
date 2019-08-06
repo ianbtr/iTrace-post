@@ -15,6 +15,7 @@ Parameters for gaze2src:
 FILTER = "ivt"
 FILTER_ARGS = ["-v 30", "-u 60"]
 
+
 def make_data_partition(function_index, entity_index, fluorite_log,
                         eclipse_log, core_log, output_dir, compute_aois=False):
 
@@ -32,8 +33,8 @@ def make_data_partition(function_index, entity_index, fluorite_log,
 
     # Save a corresponding file timeline
     time_periods = phist.save_timeline(output_dir, granularity='finest',
-                        first_time=data_part.first_time,
-                        last_time=data_part.last_time)
+                                       first_time=data_part.first_time,
+                                       last_time=data_part.last_time)
 
     # Separate the data
     data_part.create_partition(time_periods=time_periods)
@@ -85,9 +86,7 @@ def make_data_partition(function_index, entity_index, fluorite_log,
 
         unwanted_files = glob.glob(prefix + "/post2aoi/*.java.csv")
         unwanted_files.extend(glob.glob(prefix + "/post2aoi/*.java_AOI.csv"))
-        # unwanted_files.extend(glob.glob(prefix + "/gaze2src/*"))
         unwanted_files.extend(glob.glob(prefix + "/*.tar.gz"))
-        #unwanted_files.extend(glob.glob(prefix + "/plugin_log.xml"))
         unwanted_files.extend(glob.glob(prefix + "/src.xml"))
 
         for file in unwanted_files:
@@ -100,8 +99,7 @@ def make_data_partition(function_index, entity_index, fluorite_log,
     create_combined_archive(all_csvs, output_dir+"/merged_data.csv")
 
 
-
-participants = ["P-107", "P-402"]
+participants = ["P-107"]
 
 for participant in participants:
     raw_dir_1 = 'raw_data/' + participant + "/" + participant + "-bug1"
@@ -111,7 +109,7 @@ for participant in participants:
          ["Log*xml", "*/eclipse*xml", "*/core*xml"]]
 
     make_data_partition("bug1_functions.json", "bug1_entities.json", fluorite_log1, eclipse_log1, core_log1,
-                       "processed_data/"+participant+"_bug1_timeline", compute_aois=True)
+                        "processed_data/"+participant+"_bug1_timeline", compute_aois=True)
 
     raw_dir2 = 'raw_data/' + participant + "/" + participant + "-bug2"
 

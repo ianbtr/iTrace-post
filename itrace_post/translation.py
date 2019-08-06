@@ -6,12 +6,16 @@ import json
 import glob
 import sqlite3
 import pandas
-from ._aoi import get_code_envelope, get_aoi_intersection
+from .aoi import get_code_envelope, get_aoi_intersection
 
 """
-Input: A list of CSVs with the same data fields
-Effect: Combine all data and sort by time
+Combines all the given data files and sorts the rows by time.
+Parameters:
+    all_csvs: A list of CSVs with the same data fields
+    output_path: The path to save the resulting CSV
 """
+
+
 def create_combined_archive(all_csvs, output_path):
     archives = [pandas.read_csv(
                     csv_file, parse_dates=["fix_time"], index_col=["fix_time"]
@@ -23,6 +27,22 @@ def create_combined_archive(all_csvs, output_path):
     archive = archive.sort_index()
 
     archive.to_csv(output_path)
+
+
+"""
+Convert the gaze2src database and TSV files to a CSV file with fixation, AOI, function and entity data.
+Parameters:
+    db_fpath: The path to a a database (db3) file created by gaze2src
+    tsv_fpath: The path to the corresponding TSV file created by gaze2src
+    code_dir: The directory containing the code that corresponds with the current time step
+    outdir_name: Where to save outputs (AOI location files and data files)
+    smoothing: The smoothing parameter for Gaussian smoothing
+    threshold: The threshold parameter for creating a mask (after smoothing)
+    func_dict: The path to a JSON function index describing the project.
+    entity_dict: The path to a JSON entity index describing the project.
+    time_offset: The number of milliseconds to add to all timestamps (use this to synchronize with FLUORITE data)
+    compute_aois: If True, statistically infer the locations of AOIs.
+"""
 
 
 def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold,
@@ -78,8 +98,13 @@ def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold
 
 
 """
-USAGE: post_to_csv( <path to iTrace output database>, 
-    <path to iTrace output TSV>, <relative path to output directory> )
+Convert iTrace's database and TSV files to a CSV.
+
+Parameters:
+    db_fpath: The path to a a database (db3) file created by gaze2src
+    tsv_fpath: The path to the corresponding TSV file created by gaze2src
+    outdir_name: Where to save outputs (AOI location files and data files)
+    offset_ms: The number of milliseconds to add to all timestamps (use this to synchronize with FLUORITE data)
 """
 
 
@@ -147,7 +172,7 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name, offset_ms):
             pixel_x, pixel_y = input_row["X"], input_row["Y"]
 
             # Get pupil dilation
-            diameter_L, diameter_R = input_row["LEFT_PUPIL"], input_row["RIGHT_PUPIL"]
+            diameter_left, diameter_right = input_row["LEFT_PUPIL"], input_row["RIGHT_PUPIL"]
 
             # Decide which file to write to
             #  (New file)
@@ -171,12 +196,12 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name, offset_ms):
                 "fix_col": nearest_col,
                 "fix_line": nearest_line,
                 "fix_time": int((datetime.datetime.strptime(tstamp[:-6], "%Y-%m-%dT%H:%M:%S.%f") - epoch)
-            .total_seconds() * 1000 + offset_ms),
+                                .total_seconds() * 1000 + offset_ms),
                 "fix_dur": input_row["DURATION"],
                 "pixel_x": pixel_x,
                 "pixel_y": pixel_y,
-                "left_pupil": diameter_L,
-                "right_pupil": diameter_R,
+                "left_pupil": diameter_left,
+                "right_pupil": diameter_right,
                 "which_file": fname
             })
 
@@ -260,8 +285,10 @@ def append_aoi(data_filepath, x_fieldname, y_fieldname, aoi_filepath, output_fpa
 
 
 """
-Add a function columnn to the data, based on a file containing function locations.
+Adds function and entity columns to the data.
 """
+
+
 def append_entity(data_filepath, line_fieldname, function_dict, entity_dict, output_fpath):
     with open(data_filepath, "r") as infile:
         icsv = csv.DictReader(infile)
@@ -278,11 +305,13 @@ def append_entity(data_filepath, line_fieldname, function_dict, entity_dict, out
                 out_row["function"] = function_name
                 ocsv.writerow(out_row)
 
+
 def get_function(line_num, function_dict):
     for key, loc in function_dict.items():
         if int(loc[0]) <= int(line_num) <= int(loc[1]):
             return key
     return "NONE"
+
 
 def get_entity_type(line_num, entity_dict):
     for key, loc in entity_dict.items():

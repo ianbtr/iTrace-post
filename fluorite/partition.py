@@ -12,18 +12,30 @@ import glob
 import os
 import xml.etree.ElementTree
 
-"""
-A partitioner for gaze data.
-"""
-
+# A time object representing zero in unix time (0 milliseconds after 00 UTC on January 1, 1970)
 try:
     EPOCH = datetime.datetime.fromtimestamp(0)
 except OSError:
     EPOCH = datetime.datetime.utcfromtimestamp(0)
 
+"""
+A conversion from datetime to epoch/unix time
+"""
+
+
 def date_to_epoch(date_str):
     return (datetime.datetime.strptime(date_str[:-6], "%Y-%m-%dT%H:%M:%S.%f") - EPOCH) \
             .total_seconds() * 1000
+
+
+"""
+A partitioner for gaze data.
+
+Construction parameters:
+    data_filename: The relative path to a complete XML data file
+    offset_ms: The amount of time by which to increase any timestamps, in milliseconds.
+"""
+
 
 class GazeDataPartition:
     def __init__(self, data_filename, offset_ms):
@@ -35,6 +47,9 @@ class GazeDataPartition:
         self.last_time = None
         self.read_xml_data(data_filename, offset_ms)
 
+    """
+    Ingests XML data
+    """
     def read_xml_data(self, plugin_filename, offset_ms):
         # Read plugin file
         tree = xml.etree.ElementTree.parse(plugin_filename)
@@ -117,12 +132,15 @@ class GazeDataPartition:
         return times[1] - times[0]
 
     """
-    format="xml":
-        output_name should name a directory where partitioned XML files can go.
-        If this directory was created by the reader module, this function will write
-        plugin files to the appropriate subdirectories.
-    format="csv":
-        save the dataframe to a CSV, with the name of the file being output_name.
+    Save the data in chunks. 
+    
+    Parameters:
+        formatting="xml":
+            output_name should name a directory where separated XML files can go.
+            If this directory was created by the fluorite.reader module, this function will write
+            plugin files to the appropriate subdirectories.
+        formatting="csv":
+            save the dataframe to a CSV, with the name of the file being output_name.
     """
     def save_partition(self, output_name, formatting="xml"):
         if formatting is "csv":
@@ -155,3 +173,8 @@ class GazeDataPartition:
                     ofile.writelines(xml_lines[:first_line])
                     ofile.writelines(lines_to_write)
                     ofile.writelines(xml_lines[suffix_line:])
+
+        else:
+            raise ValueError(
+                "Parameter 'formatting' must be one of 'xml' or 'csv'."
+            )

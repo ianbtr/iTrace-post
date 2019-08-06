@@ -8,7 +8,16 @@ import copy
 import xml.etree.ElementTree
 
 """
-Event base class.
+A base class for edit events.
+
+Fields:
+    token_start: The index of the first character that is changed
+    time_1: The time at which the change began
+    repeat: A boolean describing whether or not the change is composed of multiple key events.
+            (It is True if multiple key events contribute to the change).
+    changed_file: The file that was changed.
+    time_2: The time at which the change completed. May or may not be initialized depending on 
+            the value of repeat.
 """
 
 
@@ -25,16 +34,10 @@ class DocumentChange:
 
 
 """
-Information regarding a particular insertion,
-corresponding to an XML element such as
-<DocumentChange _type="Insert" ... > ... </DocumentChange>
+A child class describing insertions.
 
-Parameters:
-token_start = the index into the first place in the file(stored as a string) where this event occurs
-string_inserted = the string that is inserted into the file
-start_time = the unix timestamp of when this event occured (milliseconds)
-**kwargs = optional extra info from fluorite to represent events that have two timestamps
-    (Use keyword end_time)
+Fields:
+    string_inserted: The string that is inserted.
 """
 
 
@@ -46,16 +49,12 @@ class InsertionEvent(DocumentChange):
 
 
 """
-Information regarding a particular deletion,
-corresponding to an XML element such as
-<DocumentChange _type="Delete" ... > ... </DocumentChange>
+A child class describing deletions.
 
-Parameters:
-token_start = the index into the first place in the file(stored as a string) where this event occurs
-token_end = the index into the last place in the file(stored as a string) where this event finishes its deletion 
-(one past the end) tstamp = the unix timestamp of when this event occured (milliseconds)
-**kwargs = optional extra info from fluorite to represent events that have two timestamps
-    (Use keyword end_time)
+Fields:
+    token_end: The index of the character that is one past the end of the deletion, prior to the occurrence of the
+        deletion.
+    string_deleted: The string that is deleted.
 """
 
 
@@ -69,15 +68,12 @@ class DeletionEvent(DocumentChange):
 
 
 """
-Information regarding a replaced string,
-corresponding to an XML element such as
-<DocumentChange _type="Replace" ... > ... </DocumentChange>
-Parameters:
-token_start = the index into the first place in the file(stored as a string) where this event occurs
-token_end = the index into the end of the selected code (one past the end)
-replace_with = the string that we are replacing the selected text with
-tstamp = the unix timestamp of when this event occured (milliseconds)
-**kwargs = optional extra info from fluorite to represent events that have two timestamps
+A child class describing replacements.
+
+Fields:
+    token_end: The index of the character that is one past the end of the deletion, prior to the occurrence of the
+        deletion.
+    replace_with: The string to insert.
 """
 
 
@@ -95,8 +91,12 @@ class ReplaceEvent(DocumentChange):
 A single file's editing timeline
 
 Parameters:
-filename = the name of the file that a history is being recorded for
-intial_content = the original contents of that file
+    filename: the name of the file that a history is being recorded for
+    initial_functions: A dictionary conforming to the format of a function index (see the relevant example),
+        for a particular file. (A complete function index would contain keys for multiple files; this dictionary
+        is the result of indexing by one of those keys).
+    initial_entities: Similarly, a dictionary conforming to the format of an entity index (see the relevant example),
+        for a particular file.
 """
 
 
@@ -110,9 +110,9 @@ class FileHistory:
         self.changes = list()
 
     """
-    Get a snapshot of this file at a particular time stamp.
+    Gets a snapshot of this file at a particular time stamp.
     Units are in milliseconds.
-    Second return value is a dictionary of functions.
+    Subsequent return values are new function/entity indices.
     """
     def get_snapshot(self, timestamp):
         content = self.initial_content
@@ -164,7 +164,7 @@ class FileHistory:
         return content, functions, entities
 
     """
-    Update the object by passing an XML element representing
+    Updates the object by passing an XML element representing
     either an insertion or a deletion to this file.
     Guarantees that changes are sorted by starting time.
     """
@@ -182,11 +182,14 @@ class FileHistory:
 """
 Breaks the log file into several FileHistory objects
 
-logfile = path to the XML Fluorite log file
-
-func_location_file = path to a JSON file describing the INITIAL
-    locations of functions in the project. This dataset will be
-    regenerated and returned with each call to get_snapshot().
+Parameters:
+    logfile: Relative path to the FLUORITE log file
+    
+    func_location_file: Relative path to a JSON file describing the INITIAL
+        locations of functions in the project. This dataset will be
+        regenerated and returned with each call to get_snapshot().
+        
+    entity_location_file: Similar to the above, but for an entity index.
 """
 
 
@@ -211,8 +214,7 @@ class ProjectHistory:
 
     """
     Get a snapshot of a given file at a particular time stamp.
-    Returns the entire snapshot as a string, as well as function positions if any.
-    The 'units' keyword argument must be either 'seconds' or 'milliseconds'.
+    Returns the entire snapshot as a string, as well as function/entity positions if any.
     """
     def get_snapshot(self, filename, timestamp):
         if filename not in self.project_files.keys():
@@ -321,7 +323,7 @@ class ProjectHistory:
 
                 elif child.attrib['_type'] == "Replace":
                     rw = child[1].text
-                    if rw != None:
+                    if rw is not None:
                         rw = rw.replace("\n", self.line_separator)
                     else:
                         rw = ""
@@ -342,6 +344,10 @@ class ProjectHistory:
             else:
                 continue  # ELSE: tag is neither of 'DocumentChange' or 'FileOpenCommand'
 
+    """
+    Returns a list of change objects for the entire project.
+    """
+
     def get_all_changes(self):
         # Form global change list
         all_changes = list()
@@ -350,8 +356,14 @@ class ProjectHistory:
 
         return sorted(all_changes, key=lambda c: c.time_1)
 
-    def save_snapshots(self, start_time, end_time, target_time, outdir_name):
-        target_dir = outdir_name + "/" + str(start_time) + \
+    """
+    Saves snapshots of all files that were ever opened at target_time.
+    The parameters start_time and end_time are for display purposes only.
+    They form the name of the output directory, preceded by output_prefix.
+    """
+
+    def save_snapshots(self, start_time, end_time, target_time, output_prefix):
+        target_dir = output_prefix + "/" + str(start_time) + \
                      "-" + str(end_time) + "/code_files"
 
         if not os.path.exists(target_dir):
@@ -390,8 +402,8 @@ class ProjectHistory:
     """
     Save a file timeline. Granularity is finest by default, meaning
     a new timeline frame is created for each edit. To make a different
-    granularity, enter this variable as a time step in milliseconds. 
-    (This also requires that you enter the first and last times you 
+    granularity, specify 'granularity' as an integer describing milliseconds. 
+    This will require that you enter the first and last times you 
     wish to represent.
     """
     def save_timeline(self, directory_path, granularity="finest",
@@ -494,7 +506,7 @@ class ProjectHistory:
 
 
 """
-A utility function to determine the position of functions after a change.
+A pair of utility functions to determine the positions of functions or entities after a change.
 """
 
 
@@ -518,8 +530,10 @@ def update_entities(entities, first_line, net_added):
 
     return entities
 
+
 """
-Gets the last bit of a filename
+Returns a file's 'short' name (without upper
+directories) given the relative path.
 """
 
 

@@ -1,6 +1,5 @@
 import os
 import csv
-import json
 import numpy
 import scipy.ndimage
 from math import floor
@@ -31,7 +30,7 @@ class Rect:
 
 
 """
-Get the exact dimensions of the given code file in columns and lines.
+Gets the exact dimensions of the given code file in columns and lines.
 """
 
 
@@ -76,16 +75,12 @@ def get_aoi_intersection(img_width, img_height, code_filepath, gaze_data_filepat
 
     # Compute code mask for character-resolved stimulus
     code_mask = generate_code_mask(code_filepath, img_width, img_height)
-    # plt.imshow(code_mask)
-    # plt.savefig("code_mask.png", dpi=200)
 
     # Compute gaze mask
     gaze_mask = generate_gaze_mask(gaze_data_filepath, img_width, img_height,
                                    x_fieldname=x_fieldname, y_fieldname=y_fieldname,
                                    dur_fieldname=dur_fieldname, smoothing=smoothing,
                                    threshold=threshold)
-    # plt.imshow(gaze_mask)
-    # plt.savefig("gaze_mask.png", dpi=200)
 
     # Merge masks
     mask_intersection = numpy.logical_and(code_mask, gaze_mask)
@@ -95,7 +90,6 @@ def get_aoi_intersection(img_width, img_height, code_filepath, gaze_data_filepat
 
     # Create rectangles
     rectangles = list()
-    # fig_rectangles = list()
     for label in range(1, num_features + 1):
         row_occurrences, col_occurrences = numpy.where(all_labels == label)
         left_extent = min(col_occurrences)
@@ -105,20 +99,6 @@ def get_aoi_intersection(img_width, img_height, code_filepath, gaze_data_filepat
 
         rectangles.append(Rect(left_extent, right_extent,
                                top_extent, bottom_extent))
-
-    """
-        fig_rectangles.append(Rectangle((left_extent, top_extent),
-                                        right_extent - left_extent,
-                                        bottom_extent - top_extent,
-                                        fill=False))
-
-
-    fig, ax = plt.subplots(1)
-    pc = PatchCollection(fig_rectangles, alpha=0.5, edgecolor='w')
-    ax.add_collection(pc)
-    plt.imshow(all_labels, cmap='Spectral')
-    plt.savefig('rects.png', dpi=200)
-    """
 
     # Dump rectangles in order of area
     rectangles.sort(key=lambda rect: rect.area(), reverse=True)
@@ -214,7 +194,7 @@ def generate_gaze_mask(data_file, stimulus_width, stimulus_height, x_fieldname="
             fix_y.append(float(row[y_fieldname]))
             fix_dur.append(float(row[dur_fieldname]))
 
-    # TRANSLATION OF MATLAB SCRIPT:
+    # TRANSLATION OF iMap4 MATLAB SCRIPT:
 
     # Smooth the data and create a mask
     [x, y] = numpy.meshgrid(
