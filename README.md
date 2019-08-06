@@ -37,12 +37,12 @@ list of directories containing raw data from iTrace and FLUORITE, this script
 separates your data such that each partition's data comes from a period during which the participant did not change the set 
 of code documents. With the log from FLUORITE, the state of each project file during this period
 is deduced. Once the data has been divided, the script runs `srcml` and `gaze2src` on each 
-partition and then combines the data into a single file.
+partition and then combines the output into a single file.
 
 ## Translation of iTrace Files
-The `gaze2src` program is a part of the iTrace program suite that performs post-processing 
-on raw iTrace data. The resulting data are stored in a tab-separated file and a 
-SQL database file. The `post2csv` script in this project reads both these files and produces a 
+The `gaze2src` program is a part of the iTrace v0.0.1 (alpha) program suite that performs post-processing 
+on raw data collected from the iTrace plugin. The output is stored in a tab-separated file and a 
+SQL database file. The `analyzer.py` script in this project reads both these files and produces a 
 CSV containing the line and column numbers of subjects' fixations, and assigns each fixation to 
 a rectangular AOI.
 
@@ -54,7 +54,7 @@ and column numbers. The `get_aoi_intersection` function produces a 2D numpy logi
 the intersection between the subjects' gaze and the code in the file. (A single cell in this array 
 represents a single character in the file). The rectangular bounding box of each region is considered
 an AOI, and the bounding boxes are returned from this function as a JSON-style list, sorted by decreasing
-area.
+area. For an example, please refer to the [relevant notebook](examples/aoi_generation.ipynb).
 
 ### Generating A Mask From Code
 The size of a line of code is identified by its string length, after the removal of trailing newline 
@@ -63,9 +63,9 @@ characters, such as spaces, are not removed from the code mask. This procedure i
 [eyecode](https://github.com/synesthesiam/eyecode) project.
 
 ### Generating A Mask From Gaze Data
-Gazes' durations are placed in a 2D numpy array, organized by gaze position. This array is smoothed
+Fixation counts are placed in a 2D numpy array, organized by fixation positions. This array is smoothed
 using Gaussian smoothing, and then a threshold is applied to reveal regions that attracted the 
-majority of subjects' gazes. This procedure is inspired by the masking algorithm in the
+majority of subjects' gazes. This procedure is inspired by the implementation of the masking algorithm from the
 [iMap](https://github.com/iBMLab/iMap4) project.
 
 ## General Architecture
