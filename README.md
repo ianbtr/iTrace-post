@@ -24,7 +24,7 @@ You must have the following programs installed and on your path:
 * `srcml`
 * `tar`
 
-The following modules are also required:
+The following modules are also required (among others):
 * `numpy`
 * `pandas`
 * `scipy`
