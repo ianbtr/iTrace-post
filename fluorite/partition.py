@@ -35,7 +35,7 @@ class GazeDataPartition:
         self.last_time = None
         self.read_xml_data(data_filename, offset_ms)
 
-    def read_xml_data(self, plugin_filename, offset_ms):  # TODO this part is kinda slow
+    def read_xml_data(self, plugin_filename, offset_ms):
         # Read plugin file
         tree = xml.etree.ElementTree.parse(plugin_filename)
         root = tree.getroot()
