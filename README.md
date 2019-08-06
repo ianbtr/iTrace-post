@@ -29,7 +29,7 @@ The following modules are also required:
 * `pandas`
 * `scipy`
 
-## Using `make_partition.py`
+## Using `analyzer.py`
 Please note that this script is written for experiments where there is a 
 record from the [FLUORITE plugin](http://www.cs.cmu.edu/~fluorite/).
 Given the parameters for the `gaze2src` program and a
