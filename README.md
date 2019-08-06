@@ -1,24 +1,28 @@
 # iTrace-post
 A pair of modules and sample script for processing output from the [iTrace plugin](www.i-trace.org),
 particularly when used in tandem with the [FLUORITE plugin](http://www.cs.cmu.edu/~fluorite/).
-Also performs automatic generation of Areas of Interest (AOI's) based on fixation data and
-code location. The program is capable of processing data from experiments where the participants
-were permitted to edit the code they were presented with; however, this process is 
-INCREDIBLY slow, and it is expected that a future version of iTrace will provide support
-for this kind of experiment.
+The motivation for this repository is thus: In iTrace v0.0.1 (Alpha), editing is not supported. 
+*If you used a later version of iTrace that explicitly supports editing, this issue does not apply 
+to your experiment, and you do not need to run FLUORITE in addition to iTrace.* The work-around 
+presented here is very time-consuming and should be avoided if at all possible.
+
+As an additional useful tidbit, this code also performs automatic detection of Areas of Interest (AOIs) 
+based on fixation data and code location.
 
 ## Quick Start
 Run `setup.py` like this:
 ```$ python setup.py install```  
 As soon as this completes, you're ready to import the `itrace_post` and `fluorite` 
 modules into your project. Please note that you will need to copy the script 
-`make_partition.py` if you wish to use it in your project. It may be helpful use this 
+`analyzer.py` if you wish to use it in your project. Alternatively, it may be helpful to use this 
 script as an example when writing a similar script to read output from iTrace.
+If you wish to do this, please refer to the [relevant notebook](examples/iTrace_post_processing.ipynb).
 
 ## Requirements
 You must have the following programs installed and on your path:
 * `gaze2src`
 * `srcml`
+* `tar`
 
 The following modules are also required:
 * `numpy`
@@ -64,5 +68,10 @@ using Gaussian smoothing, and then a threshold is applied to reveal regions that
 majority of subjects' gazes. This procedure is inspired by the masking algorithm in the
 [iMap](https://github.com/iBMLab/iMap4) project.
 
-## General Program Control Flow
+## General Architecture
+The following diagram is a simplification, but it conveys the principle upon which this post-processor
+operates.
 ![alt text](img/chart.png)
+In particular, the `gaze2src` program must take both the iTrace-Core log and the partitioned raw data
+as inputs, as well as some additional parameters. Furthermore, during this process, analysis such as AOI generation 
+is also performed, but this fact is not explicitly shown in the diagram.

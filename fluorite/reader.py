@@ -373,13 +373,19 @@ class ProjectHistory:
             if entities is not None:
                 all_entities[short_filename[:-5]] = copy.deepcopy(entities)
 
-        if self.initial_functions is not None:
-            with open(target_dir + "/functions.json", "w") as ofile:
-                json.dump(all_functions, ofile)
+        try:
+            if self.initial_functions is not None:
+                with open(target_dir + "/functions.json", "w") as ofile:
+                    json.dump(all_functions, ofile)
+        except AttributeError:
+            pass
 
-        if self.initial_entities is not None:
-            with open(target_dir + "/entities.json", "w") as ofile:
-                json.dump(all_entities, ofile)
+        try:
+            if self.initial_entities is not None:
+                with open(target_dir + "/entities.json", "w") as ofile:
+                    json.dump(all_entities, ofile)
+        except AttributeError:
+            pass
 
     """
     Save a file timeline. Granularity is finest by default, meaning
@@ -467,6 +473,9 @@ class ProjectHistory:
                                 snapshot_end, snapshot_start+1, directory_path)
 
             periods.append([snapshot_start, snapshot_end])
+
+            if snapshot_end >= last_time:
+                return periods
 
             count += 1
 

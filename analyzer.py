@@ -24,7 +24,7 @@ def make_data_partition(function_index, entity_index, fluorite_log,
     phist = ProjectHistory(fluorite_log, func_location_file=function_index,
                            entity_location_file=entity_index)
 
-    # In our timezone at least, the time iTrace records is one hour behind that of Fluorite.
+    # In our timezone at least, the time iTrace records is 4 hours behind that of FLUORITE.
     time_offset = 4*3600*1000
 
     # Create a DataPartition to split the plugin log file
@@ -61,7 +61,7 @@ def make_data_partition(function_index, entity_index, fluorite_log,
         subprocess.run(["srcml", prefix+"/src.tar.gz", "-o", prefix+"/src.xml"],
                        stdout=DEVNULL, stderr=DEVNULL)
 
-        # Run gaze2src TODO allow external configuration of gaze2src and iTrace-post parameters
+        # Run gaze2src
         subprocess.run(["gaze2src", core_log, prefix+"/plugin_log.xml", prefix+"/src.xml",
                         "-f", FILTER]+FILTER_ARGS+["-o", prefix+"/gaze2src"],
                        stdout=DEVNULL, stderr=DEVNULL)
@@ -101,9 +101,9 @@ def make_data_partition(function_index, entity_index, fluorite_log,
 
 
 
-normal_participants = ["P-107", "P-402"]
+participants = ["P-107", "P-402"]
 
-for participant in normal_participants:
+for participant in participants:
     raw_dir_1 = 'raw_data/' + participant + "/" + participant + "-bug1"
 
     fluorite_log1, eclipse_log1, core_log1 = \

@@ -22,8 +22,6 @@ def create_combined_archive(all_csvs, output_path):
 
     archive = archive.sort_index()
 
-    # archive = archive.drop(columns=["AOI"]) # Number is no longer relevant in combined data
-
     archive.to_csv(output_path)
 
 
