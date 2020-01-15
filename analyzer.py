@@ -25,8 +25,9 @@ def make_and_process_data_partition(function_index, entity_index, fluorite_log,
     phist = ProjectHistory(fluorite_log, func_location_file=function_index,
                            entity_location_file=entity_index)
 
-    # In our timezone at least, the time iTrace records is 4 hours behind that of FLUORITE.
-    time_offset = 4*3600*1000
+    # In our timezone at least, the time iTrace records is 4 or 5 hours behind that of FLUORITE.
+    # TODO since this varies, maybe check it automatically and round to the nearest hour difference.
+    time_offset = 5*3600*1000
 
     # Create a DataPartition to split the plugin log file
     data_part = GazeDataPartition(eclipse_log, time_offset)
@@ -97,3 +98,34 @@ def make_and_process_data_partition(function_index, entity_index, fluorite_log,
     # Collect CSVs and create main archive
     all_csvs = glob.glob(output_dir+"/*/post2aoi/*_functions.csv")
     create_combined_archive(all_csvs, output_dir+"/merged_data.csv")
+
+participants = ["P-409"]
+
+for participant in participants:
+    raw_dir_1 = 'raw_data/Main/' + participant + "/" + participant + "-bug1"
+
+    try:
+        fluorite_log1, eclipse_log1, core_log1 = \
+            [glob.glob(raw_dir_1+"/"+matching_str)[0] for matching_str in
+             ["*/Log*xml", "*/eclipse*xml", "*/core*xml"]]
+    except IndexError:
+        fluorite_log1, eclipse_log1, core_log1 = \
+            [glob.glob(raw_dir_1 + "/" + matching_str)[0] for matching_str in
+             ["Log*xml", "*/eclipse*xml", "*/core*xml"]]
+
+    make_and_process_data_partition("bug1_functions.json", "bug1_entities.json", fluorite_log1, eclipse_log1, core_log1,
+                        "processed_data/"+participant+"_bug1_timeline", compute_aois=True)
+
+    raw_dir2 = 'raw_data/Main/' + participant + "/" + participant + "-bug2"
+
+    try:
+        fluorite_log2, eclipse_log2, core_log2 = \
+            [glob.glob(raw_dir2+"/"+matching_str)[0] for matching_str in
+             ["*/Log*xml", "*/eclipse*xml", "*/core*xml"]]
+    except IndexError:
+        fluorite_log2, eclipse_log2, core_log2 = \
+            [glob.glob(raw_dir2 + "/" + matching_str)[0] for matching_str in
+             ["Log*xml", "*/eclipse*xml", "*/core*xml"]]
+
+    make_and_process_data_partition("bug2_functions.json", "bug2_entities.json", fluorite_log2, eclipse_log2, core_log2,
+                        "processed_data/"+participant+"_bug2_timeline", compute_aois=True)
