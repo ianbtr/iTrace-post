@@ -6,17 +6,19 @@ Parses the FLUORITE log and gives a report of the timing of a few different cate
 4. "Understanding" (None)
 """
 
-from csv import DictWriter
+from .phase_change_query import get_phase_number_from_time
 import xml.etree.ElementTree
 
-fields = ["p_name", "AOI", "dwell_duration"]
+fields = ["p_name", "AOI", "Time (ms after epoch)", "dwell_duration", "phase_number"]
 
 
-def add_aoi_row(ocsv, p_name, aoi_name, duration):
+def add_aoi_row(ocsv, p_name, aoi_name, time, duration, phase_num):
     ocsv.writerow({
         "p_name": p_name,
         "AOI": aoi_name,
-        "dwell_duration": duration
+        "Time (ms after epoch)": time,
+        "dwell_duration": duration,
+        "phase_number": phase_num
     })
 
 
@@ -29,23 +31,31 @@ p_name: The name of the current participant
 """
 
 
-def make_fluorite_log_report(logfile_name, output_csv, p_name):
+def make_fluorite_log_report(logfile_name, output_csv, p_name, phase_change_file, tz_offset_ms):
     tree = xml.etree.ElementTree.parse(logfile_name)
     root = tree.getroot()
-    current_time = 0
+    launch_time = int(root.attrib['startTimestamp'])
+    current_time = launch_time
 
     for child in root:
-        event_start_time = int(child.attrib["timestamp"])
-        event_end_time = int(child.attrib["timestamp2"]) if "timestamp2" in child.attrib.keys() else None
+        event_start_time = launch_time + int(child.attrib["timestamp"])
+        event_end_time = launch_time + int(child.attrib["timestamp2"]) if "timestamp2" in child.attrib.keys() else None
+
+        participant = p_name[:4]
+        bug_number = int(p_name[-1])
+        phase_number = get_phase_number_from_time(event_start_time + tz_offset_ms, participant, bug_number, phase_change_file)
 
         # Add 'Understanding' section between last time and current time
         if current_time < event_start_time:
-            add_aoi_row(output_csv, p_name, "Understanding", event_start_time - current_time)
+            add_aoi_row(output_csv, p_name, "Understanding", current_time, event_start_time - current_time, phase_number)
             current_time = event_start_time if not event_end_time else event_end_time
 
         duration = event_end_time - event_start_time if event_end_time else 1
 
-        add_row_args = lambda name: add_aoi_row(output_csv, p_name, name, duration)
+        add_row_args = lambda name: add_aoi_row(output_csv, p_name, name, event_start_time, duration, phase_number)
+
+        if event_start_time == 1563562215433:
+            print("foo")
 
         if child.tag == "DocumentChange":
             add_row_args("Editing")
