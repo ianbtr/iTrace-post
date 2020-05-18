@@ -4,6 +4,7 @@ An example script
 
 import os
 import glob
+import pandas as pd
 import subprocess
 from subprocess import DEVNULL
 from fluorite import ProjectHistory, GazeDataPartition
@@ -99,33 +100,53 @@ def make_and_process_data_partition(function_index, entity_index, fluorite_log,
     all_csvs = glob.glob(output_dir+"/*/post2aoi/*_functions.csv")
     create_combined_archive(all_csvs, output_dir+"/merged_data.csv")
 
-participants = ["P-409"]
+
+participants = ["p100"]
+data_dir = "rawdata"
+pid_info = pd.read_csv("pid.csv")
+patch_order_fieldname = "Order (git branch name, case_NUM)"
 
 for participant in participants:
-    raw_dir_1 = 'raw_data/Main/' + participant + "/" + participant + "-bug1"
+    participant_dir = data_dir + "/" + participant
+    data_dirs = glob.glob(participant_dir + "/158*")
+    fluorite_logs = glob.glob(participant_dir + "/fluorite/Log*xml")
 
-    try:
-        fluorite_log1, eclipse_log1, core_log1 = \
-            [glob.glob(raw_dir_1+"/"+matching_str)[0] for matching_str in
-             ["*/Log*xml", "*/eclipse*xml", "*/core*xml"]]
-    except IndexError:
-        fluorite_log1, eclipse_log1, core_log1 = \
-            [glob.glob(raw_dir_1 + "/" + matching_str)[0] for matching_str in
-             ["Log*xml", "*/eclipse*xml", "*/core*xml"]]
+    participant_upper_case = participant.upper()
+    participant_metadata = pid_info[pid_info["PID"] == participant_upper_case]
+    case_order_str = participant_metadata[patch_order_fieldname][0]
+    case_order_list = case_order_str.split(", ")
 
-    make_and_process_data_partition("bug1_functions.json", "bug1_entities.json", fluorite_log1, eclipse_log1, core_log1,
-                        "processed_data/"+participant+"_bug1_timeline", compute_aois=True)
+    assert len(fluorite_logs) == len(data_dirs) == 6
 
-    raw_dir2 = 'raw_data/Main/' + participant + "/" + participant + "-bug2"
+    for trial_index in range(6):
+        participant_data_dir = data_dirs[trial_index]
+        fluorite_log = fluorite_logs[trial_index]
+        case_num_str = case_order_list[trial_index]
 
-    try:
-        fluorite_log2, eclipse_log2, core_log2 = \
-            [glob.glob(raw_dir2+"/"+matching_str)[0] for matching_str in
-             ["*/Log*xml", "*/eclipse*xml", "*/core*xml"]]
-    except IndexError:
-        fluorite_log2, eclipse_log2, core_log2 = \
-            [glob.glob(raw_dir2 + "/" + matching_str)[0] for matching_str in
-             ["Log*xml", "*/eclipse*xml", "*/core*xml"]]
+        eclipse_log = glob.glob(participant_data_dir + "/eclipse*xml")
+        core_log = glob.glob(participant_data_dir + "/core*xml")
 
-    make_and_process_data_partition("bug2_functions.json", "bug2_entities.json", fluorite_log2, eclipse_log2, core_log2,
-                        "processed_data/"+participant+"_bug2_timeline", compute_aois=True)
+        trial_num_str = str(trial_index + 1)
+        output_dir = "processed_data/"+participant+"/trial_"+trial_num_str
+
+        # Get patch number from case number
+        case_num = int(case_num_str)
+        patch_num = case_num - 6 if case_num > 6 else case_num
+        patch_num_str = str(patch_num)
+
+        # Get annotations file from patch number
+        annotation_file =
+
+        # Write some diagnostic info
+        with open(output_dir + "/info.txt") as stampfile:
+            stampfile.write("Trial number = "+trial_num_str+"\n"+
+                            "Case number = "+case_num_str+"\n"+
+                            "Patch number = "+patch_num_str+"\n"+
+                            "Annotation file = "+annotation_file+"\n"+
+                            "Participant = "+participant+"\n"+
+                            "FLUORITE Log = "+fluorite_log+"\n"+
+                            "IDE Log = "+eclipse_log+"\n"+
+                            "Gaze Point Log = "+core_log)
+
+        make_and_process_data_partition("annotations.json", None, fluorite_log, eclipse_log, core_log,
+                                        output_dir, compute_aois=False)

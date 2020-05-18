@@ -278,15 +278,14 @@ class ProjectHistory:
                     snapshot_text = snapshot_text.replace("\n", self.line_separator)
 
                     # Construct FileHistory object from file snapshot and file name
-                    short_name = trim_filename(current_file)
-                    try:
-                        self.project_files[short_name] = \
-                            FileHistory(short_name, snapshot_text,
-                                        initial_functions=self.initial_functions[short_name[:-5]],
-                                        initial_entities=self.initial_entities[short_name[:-5]])
-                    except AttributeError:
-                        self.project_files[short_name] = \
-                            FileHistory(short_name, snapshot_text,)
+                    short_name = trim_filepath(current_file)
+                    init_funcs = self.initial_functions[trim_extension(short_name)] if self.initial_functions else None
+                    init_entities = self.initial_entities[trim_extension(short_name)] if self.initial_entities else None
+
+                    self.project_files[short_name] = \
+                        FileHistory(short_name, snapshot_text,
+                                    initial_functions=init_funcs,
+                                    initial_entities=init_entities)
 
             # Parse DocumentChange elements
             elif child.tag == "DocumentChange":
@@ -339,7 +338,7 @@ class ProjectHistory:
                 else:
                     continue
 
-                self.project_files[trim_filename(current_file)].update_history(change)
+                self.project_files[trim_filepath(current_file)].update_history(change)
 
             else:
                 continue  # ELSE: tag is neither of 'DocumentChange' or 'FileOpenCommand'
@@ -372,7 +371,7 @@ class ProjectHistory:
         all_functions, all_entities = dict(), dict()
 
         for filehist in self.project_files.values():
-            short_filename = trim_filename(filehist.filename)
+            short_filename = trim_filepath(filehist.filename)
             snapshot, functions, entities = filehist.get_snapshot(target_time)
             snapshot = snapshot.replace(self.line_separator, "\n")
 
@@ -537,5 +536,14 @@ directories) given the relative path.
 """
 
 
-def trim_filename(name):
+def trim_filepath(name):
     return name.split("\\")[-1].split("/")[-1]
+
+
+"""
+Removes the filename extension, if one exists.
+"""
+
+
+def trim_extension(name):
+    return os.path.splitext(name)[0]
