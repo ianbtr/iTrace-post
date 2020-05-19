@@ -101,6 +101,12 @@ def make_and_process_data_partition(function_index, entity_index, fluorite_log,
     create_combined_archive(all_csvs, output_dir+"/merged_data.csv")
 
 
+def get_unique_matching_file(expr):
+    candidates = glob.glob(expr)
+    assert len(candidates) == 1
+    return candidates[0]
+
+
 participants = ["p100"]
 data_dir = "rawdata"
 pid_info = pd.read_csv("pid.csv")
@@ -111,20 +117,24 @@ for participant in participants:
     data_dirs = glob.glob(participant_dir + "/158*")
     fluorite_logs = glob.glob(participant_dir + "/fluorite/Log*xml")
 
+    # 'fluorite' was frequently misspelled.
+    if len(fluorite_logs) == 0:
+        fluorite_logs = glob.glob(participant_dir + "/flourite/Log*xml")
+
     participant_upper_case = participant.upper()
     participant_metadata = pid_info[pid_info["PID"] == participant_upper_case]
     case_order_str = participant_metadata[patch_order_fieldname][0]
     case_order_list = case_order_str.split(", ")
 
-    assert len(fluorite_logs) == len(data_dirs) == 6
+    assert len(fluorite_logs) == len(data_dirs) == len(case_order_list) == 6
 
     for trial_index in range(6):
         participant_data_dir = data_dirs[trial_index]
         fluorite_log = fluorite_logs[trial_index]
         case_num_str = case_order_list[trial_index]
 
-        eclipse_log = glob.glob(participant_data_dir + "/eclipse*xml")
-        core_log = glob.glob(participant_data_dir + "/core*xml")
+        eclipse_log = get_unique_matching_file(participant_data_dir + "/eclipse*xml")
+        core_log = get_unique_matching_file(participant_data_dir + "/core*xml")
 
         trial_num_str = str(trial_index + 1)
         output_dir = "processed_data/"+participant+"/trial_"+trial_num_str
@@ -135,10 +145,13 @@ for participant in participants:
         patch_num_str = str(patch_num)
 
         # Get annotations file from patch number
-        annotation_file =
+        annotation_file = "Annotations/case_"+patch_num_str+"_bug_annotation.json"
 
         # Write some diagnostic info
-        with open(output_dir + "/info.txt") as stampfile:
+        if not os.path.exists(output_dir):
+            os.makedirs(output_dir)
+
+        with open(output_dir + "/info.txt", "w") as stampfile:
             stampfile.write("Trial number = "+trial_num_str+"\n"+
                             "Case number = "+case_num_str+"\n"+
                             "Patch number = "+patch_num_str+"\n"+
@@ -148,5 +161,5 @@ for participant in participants:
                             "IDE Log = "+eclipse_log+"\n"+
                             "Gaze Point Log = "+core_log)
 
-        make_and_process_data_partition("annotations.json", None, fluorite_log, eclipse_log, core_log,
+        make_and_process_data_partition(annotation_file, None, fluorite_log, eclipse_log, core_log,
                                         output_dir, compute_aois=False)

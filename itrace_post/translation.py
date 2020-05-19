@@ -86,11 +86,13 @@ def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold
             else:
                 target_file = generated_file
 
+            code_fname_no_ext = trim_extension(code_fname)
+
             with open(func_dict) as infile:
-                func_file = json.load(infile)[code_fname[:-5]]
+                func_file = json.load(infile)[code_fname_no_ext]
 
             with open(entity_dict) as infile:
-                entity_file = json.load(infile)[code_fname[:-5]]
+                entity_file = json.load(infile)[code_fname_no_ext]
 
             append_entity(
                 target_file, "fix_line", func_file, entity_file, generated_file[:-4]+"_functions.csv"
@@ -319,3 +321,7 @@ def get_entity_type(line_num, entity_dict):
             if int(loc2[0]) <= int(line_num) <= int(loc2[1]):
                 return key
     return "NONE"
+
+
+def trim_extension(name):
+    return os.path.splitext(name)[0]

@@ -196,6 +196,7 @@ Parameters:
 class ProjectHistory:
     def __init__(self, logfile, func_location_file=None, entity_location_file=None):
         self.logfile = logfile
+        self.initial_functions = self.initial_entities = None
 
         if func_location_file is not None:
             with open(func_location_file) as infile:
@@ -279,8 +280,17 @@ class ProjectHistory:
 
                     # Construct FileHistory object from file snapshot and file name
                     short_name = trim_filepath(current_file)
-                    init_funcs = self.initial_functions[trim_extension(short_name)] if self.initial_functions else None
-                    init_entities = self.initial_entities[trim_extension(short_name)] if self.initial_entities else None
+                    short_name_no_ext = trim_extension(short_name)
+
+                    if not self.initial_functions or short_name_no_ext not in self.initial_functions.keys():
+                        init_funcs = None
+                    else:
+                        init_funcs = self.initial_functions[trim_extension(short_name)]
+
+                    if not self.initial_entities or short_name_no_ext not in self.initial_entities:
+                        init_entities = None
+                    else:
+                        init_entities = self.initial_entities[trim_extension(short_name)]
 
                     self.project_files[short_name] = \
                         FileHistory(short_name, snapshot_text,
@@ -372,6 +382,7 @@ class ProjectHistory:
 
         for filehist in self.project_files.values():
             short_filename = trim_filepath(filehist.filename)
+            fname_no_ext = trim_extension(short_filename)
             snapshot, functions, entities = filehist.get_snapshot(target_time)
             snapshot = snapshot.replace(self.line_separator, "\n")
 
@@ -379,24 +390,19 @@ class ProjectHistory:
                 ofile.write(snapshot)
 
             if functions is not None:
-                all_functions[short_filename[:-5]] = copy.deepcopy(functions)
+                all_functions[fname_no_ext] = copy.deepcopy(functions)
 
             if entities is not None:
-                all_entities[short_filename[:-5]] = copy.deepcopy(entities)
+                all_entities[fname_no_ext] = copy.deepcopy(entities)
 
-        try:
-            if self.initial_functions is not None:
-                with open(target_dir + "/functions.json", "w") as ofile:
-                    json.dump(all_functions, ofile)
-        except AttributeError:
-            pass
+        if self.initial_functions is not None:
+            with open(target_dir + "/functions.json", "w") as ofile:
+                json.dump(all_functions, ofile)
 
-        try:
-            if self.initial_entities is not None:
-                with open(target_dir + "/entities.json", "w") as ofile:
-                    json.dump(all_entities, ofile)
-        except AttributeError:
-            pass
+        if self.initial_entities is not None:
+            with open(target_dir + "/entities.json", "w") as ofile:
+                json.dump(all_entities, ofile)
+
 
     """
     Save a file timeline. Granularity is finest by default, meaning
