@@ -50,6 +50,9 @@ def make_and_process_data_partition(function_index, entity_index, fluorite_log,
     dirs = os.listdir(output_dir)
 
     for sub_dir in dirs:
+        if not os.path.isdir(output_dir + "/" + sub_dir):
+            continue
+
         print("\t"+sub_dir)
         prefix = output_dir+"/"+sub_dir
 
@@ -79,8 +82,8 @@ def make_and_process_data_partition(function_index, entity_index, fluorite_log,
 
         fixations_db = glob.glob(itrace_prefix + "/rawgazes*.db3")[0]
 
-        function_archive = prefix+"/code_files/functions.json"
-        entity_archive = prefix+"/code_files/entities.json"
+        function_archive = prefix+"/code_files/functions.json" if function_index else None
+        entity_archive = prefix+"/code_files/entities.json" if entity_index else None
 
         post_to_aoi(fixations_db, fixations_tsv, prefix+"/code_files",
                     prefix+"/post2aoi", 5.0, 0.01, func_dict=function_archive,
@@ -107,7 +110,7 @@ def get_unique_matching_file(expr):
     return candidates[0]
 
 
-participants = ["p100"]
+participants = ["p102"]
 data_dir = "rawdata"
 pid_info = pd.read_csv("pid.csv")
 patch_order_fieldname = "Order (git branch name, case_NUM)"
@@ -123,7 +126,7 @@ for participant in participants:
 
     participant_upper_case = participant.upper()
     participant_metadata = pid_info[pid_info["PID"] == participant_upper_case]
-    case_order_str = participant_metadata[patch_order_fieldname][0]
+    case_order_str = participant_metadata.iloc[0][patch_order_fieldname]
     case_order_list = case_order_str.split(", ")
 
     assert len(fluorite_logs) == len(data_dirs) == len(case_order_list) == 6

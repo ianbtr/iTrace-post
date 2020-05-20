@@ -516,6 +516,9 @@ A pair of utility functions to determine the positions of functions or entities 
 
 
 def update_functions(functions, first_line, net_added):
+    if functions is None:
+        return functions
+
     for name, line_range in functions.items():
         if line_range[0] > first_line:
             line_range[0] += net_added
@@ -526,6 +529,9 @@ def update_functions(functions, first_line, net_added):
 
 
 def update_entities(entities, first_line, net_added):
+    if entities is None:
+        return entities
+
     for key, val in entities.items():
         for name, line_range in val.items():
             if line_range[0] > first_line:

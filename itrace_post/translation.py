@@ -80,7 +80,7 @@ def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold
                 json_file, generated_file[:-4]+"_AOI.csv"
             )
 
-        if func_dict is not None:
+        if func_dict is not None or entity_dict is not None:
             if compute_aois:
                 target_file = generated_file[:-4]+"_AOI.csv"
             else:
@@ -88,11 +88,17 @@ def post_to_aoi(db_fpath, tsv_fpath, code_dir, outdir_name, smoothing, threshold
 
             code_fname_no_ext = trim_extension(code_fname)
 
-            with open(func_dict) as infile:
-                func_file = json.load(infile)[code_fname_no_ext]
+            func_file = entity_file = None
 
-            with open(entity_dict) as infile:
-                entity_file = json.load(infile)[code_fname_no_ext]
+            if func_dict is not None:
+                with open(func_dict) as infile:
+                    func_file_dict = json.load(infile)
+                    func_file = func_file_dict[code_fname_no_ext] if code_fname_no_ext in func_file_dict.keys() else None
+
+            if entity_dict is not None:
+                with open(entity_dict) as infile:
+                    entity_file_dict = json.load(infile)
+                    entity_file = entity_file_dict[code_fname_no_ext] if code_fname_no_ext in entity_file_dict.keys() else None
 
             append_entity(
                 target_file, "fix_line", func_file, entity_file, generated_file[:-4]+"_functions.csv"
@@ -129,7 +135,7 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name, offset_ms):
 
     # Select rows for which fixation_id is not null
     df = pandas.read_sql_query(
-        "SELECT * FROM gazes WHERE fixation_id IS NOT NULL AND line_num IS NOT NULL AND col_num IS NOT NULL",
+        "SELECT * FROM gazes WHERE fixation_id IS NOT NULL",
         conn
     )
 
@@ -162,7 +168,11 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name, offset_ms):
             # Get fixation location by rounding the mean of line/column values
             means = id_data.loc[:, ['line_num', 'col_num']].mean()
             mean_line, mean_col = means['line_num'], means['col_num']
-            nearest_line, nearest_col = int(round(mean_line)), int(round(mean_col))
+
+            try:
+                nearest_line, nearest_col = int(round(mean_line)), int(round(mean_col))
+            except ValueError:
+                nearest_line, nearest_col = None, None
 
             # Get time stamp from df
             tstamp = id_data['time_stamp'].iloc[0]
@@ -195,8 +205,8 @@ def post_to_csv(db_fpath, tsv_fpath, outdir_name, offset_ms):
 
             # Write to output file
             ocsv.writerow({
-                "fix_col": nearest_col,
-                "fix_line": nearest_line,
+                "fix_col": nearest_col if nearest_col else "NONE",
+                "fix_line": nearest_line if nearest_line else "NONE",
                 "fix_time": int((datetime.datetime.strptime(tstamp[:-6], "%Y-%m-%dT%H:%M:%S.%f") - epoch)
                                 .total_seconds() * 1000 + offset_ms),
                 "fix_dur": input_row["DURATION"],
@@ -309,17 +319,25 @@ def append_entity(data_filepath, line_fieldname, function_dict, entity_dict, out
 
 
 def get_function(line_num, function_dict):
+    if function_dict is None:
+        return "NONE"
+
     for key, loc in function_dict.items():
         if int(loc[0]) <= int(line_num) <= int(loc[1]):
             return key
+
     return "NONE"
 
 
 def get_entity_type(line_num, entity_dict):
+    if entity_dict is None:
+        return "NONE"
+
     for key, loc in entity_dict.items():
         for loc2 in loc.values():
             if int(loc2[0]) <= int(line_num) <= int(loc2[1]):
                 return key
+
     return "NONE"
 
 
